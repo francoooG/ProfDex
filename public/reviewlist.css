@@ -1,0 +1,134 @@
+body {
+    height:100%;
+}
+    
+#review {
+    position: relative;
+    top: 0;
+    display: flex;
+    z-index:1;
+    overflow: hidden;
+    background-image: url('images/ReviewBackground.png'); 
+	border-radius: 5px;
+    border-bottom: 2px solid #8c8c8c;
+	margin-top: 20px;
+	margin-left: 20px;
+    width: 260px;
+    height: 260px; 
+}
+
+.review-header {
+    top: 0;
+    display: flex;
+    z-index:1;
+    overflow: hidden;
+    background-image: url('images/ReviewHeaderBackground.png'); 
+	border-radius: 5px;
+    border-bottom: 2px solid #8c8c8c;
+    width: 270px;
+    height: 25px; 
+}
+
+.bar{
+    position: absolute;
+	transform-origin: bottom;
+    transform: scaleY(2);
+	background-color: green;
+}
+
+#proficiency {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/AttributesSprites.png) 0 0;
+}
+
+#generosity {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/AttributesSprites.png) 0 0;
+	background-position: -44px 0px;
+}
+
+#engagement {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/AttributesSprites.png) 0 0;
+	background-position: -87px 0px;
+}
+
+#workload {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/AttributesSprites.png) 0 0;
+	background-position: -132px 0px;
+}
+
+#difficulty {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/AttributesSprites.png) 0 0;
+	background-position: -169px 0px;
+}
+
+.review-container {
+    position: absolute;
+    display:inline-flex;
+    margin-top: 130px;
+	margin-left: 310px;
+    align-items: flex-start;
+    background-color: transparent;
+}
+
+.actual-review-container {
+	display:flex;
+    flex-flow: wrap;
+    min-height: 100px;
+	overflow: hidden;
+    align-items: flex-end;
+    width: 1000px;
+}
+
+#professorname {
+	text-decoration: none;
+    font-family: 'proxima_nova_rgbold';
+	font-size: 25px;
+	color: #e65c00;
+}
+
+#filter {
+    position: absolute;
+	display:inline-flex;
+    width: 100%;
+    height: 60px;
+	background-image: url('images/ReviewFilterBackground.png'); 
+	margin-top: 50px;
+	border-bottom: 2px solid #666666;
+}
+
+a.filter {
+    position: absolute;
+    text-decoration: none;
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+    font-size: 1rem;
+	color: #595959;
+}
+
+a.page {
+    position: absolute;
+    text-decoration: none;
+    font-family: 'proxima_nova_rgbold';
+    font-size: 1rem;
+	color: #595959;
+}
+
+a.review-author {
+	margin-top: 5px;
+	margin-left: 5px;
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+	color: #595959;
+}

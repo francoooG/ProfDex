@@ -1,0 +1,86 @@
+* {
+    box-sizing: border-box;
+}
+
+h1 {
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    padding-left: 10%;
+	color: orange;
+}
+
+body {
+    background-image: url("images/Background.png");
+    font-family: Arial, Helvetica, sans-serif;
+	color: gray;
+}
+
+
+.maincontainer {
+    margin-top: 100px;
+}
+
+.subcontainer {
+    padding-left: 30%;
+}
+
+.legend {
+    display: block;
+    padding-left: 10%;
+    padding-right: 10%;
+    padding-bottom: 10%;
+    padding-top: 10%;
+    width: 500px;
+    font-size: 1.5rem;
+}
+
+#proficiency {
+
+    display: inline-block;
+    background-image: url(images/AttributesSprites.png);
+    width: 31px;
+    height: 26px;
+
+}
+
+#generosity {
+    
+    display: inline-block;
+    background-image: url(images/AttributesSprites.png);
+    background-repeat: no-repeat;
+    width: 31px;
+    height: 26px;
+	background-position: -44px 0px;
+}
+
+
+#engagement {
+
+    display: inline-block;
+    background-image: url(images/AttributesSprites.png);
+    background-repeat: no-repeat;
+    width: 31px;
+    height: 26px;
+	background-position: -87px 0px;
+}
+
+#workload {
+
+    display: inline-block;
+    background-image: url(images/AttributesSprites.png);
+    background-repeat: no-repeat;
+    width: 31px;
+    height: 26px;
+	background-position: -132px 0px;
+}
+
+#difficulty {
+
+    display: inline-block;
+    background-image: url(images/AttributesSprites.png);
+    background-repeat: no-repeat;
+    width: 31px;
+    height: 26px;
+	background-position: -169px 0px;
+}
+

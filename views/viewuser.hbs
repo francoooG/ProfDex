@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="viewuser.css">
+        <link rel="stylesheet" href="navbar.css">
+    </head>
+
+    <body>
+        <div class="container">
+			{{#with userData}}
+				<div class="upper">
+					<div class="left-side">
+						<div class="user-dp"></div>
+					</div>
+
+				   <div class="right-side">
+						<div class="row1">
+							<div class="username">
+								<div style="font-size: 30px;">Username</div>
+								<div class="username-name">{{aUser.username}}</div>
+							</div>
+							
+							<div class="major">
+								<div style="font-size: 30px;">Major</div>
+								<div class="major-name">{{aUser.course}}</div>
+							</div>
+
+						</div>
+
+						<div class="row2">
+							<div style="font-size: 30px;">ID Batch</div>
+							<div class="idnumber">{{aUser.idbatch}}</div>
+						</div>
+
+						<div class="row3">
+							<div class="bio" style="font-size: 30px;">Bio</div>
+							<p class="bio-text">{{aUser.bio}}</p>
+						</div>
+
+				   </div>
+					
+				</div>
+			{{/with}}
+            
+            <div class="lower">
+                <div class="reviews">
+                    <div class="post-text" style="font-size: 30px;">Some of my posts:</div>
+					{{#each postData}}
+						<div class="review-container">
+							<div class="review-upper">
+								<a class="prof-name" href="/viewprof?id={{to}}">{{toname}}</a>
+								<div class="course-taken">{{course}}</div>
+							</div>
+							<div class="review-lower">
+								<p class="review-text">{{aPost.text}}</p>
+							</div>
+						</div>
+					{{/each}}
+                </div>
+            </div>
+        </div>
+		
+		<div id="navbar">
+            <a class="mainpage" href="/">Profdex</a>
+            <span class="navbar-buttons">
+                <a class="menu" href="/editprofile">About Me</a>
+				<a class="menu" href="/createpost">Create Review</a>
+				<a class="menu" href="/help">Help</a>
+            </span>
+            <span class="search-buttons">
+                {{#if loggedInUser}}
+					<a class="login-button" href="/logout">Logout</a>
+				{{else}}
+					<a class="login-button" href="/login">Login</a>
+				{{/if}}
+                <form action="/viewprof" method="post">
+					<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+					<button type="submit" id="searchbutton"></button>
+				</form>
+            </span>
+        </div>
+    </body>
+</html>

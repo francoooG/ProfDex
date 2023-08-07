@@ -1,0 +1,70 @@
+<html>
+<head>
+    <link rel="stylesheet" href="navbar.css">
+    <link rel="stylesheet" href="help.css">
+</head>
+<body>
+    
+    <div id="navbar">
+        <a class="mainpage" href="/">Profdex</a>
+        <span class="navbar-buttons">
+            <a class="menu" href="/editprofile">About Me</a>
+			<a class="menu" href="/createpost">Create Review</a>
+            <a class="menu" href="/help">Help</a>
+        </span>
+        <span class="search-buttons">
+			{{#if loggedInUser}}
+				<a class="login-button" href="/logout">Logout</a>
+			{{else}}
+				<a class="login-button" href="/login">Login</a>
+			{{/if}}
+            <form action="/viewprof" method="post">
+				<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+				<button type="submit" id="searchbutton"></button>
+			</form>
+        </span>
+    </div>
+
+     <div class="maincontainer">
+        <h1>Icons and Their Meanings</h1>
+        <div class="subcontainer">
+            <div class="legend">
+
+                <span id="generosity"></span>
+                <span>Generosity</span>
+
+            </div>
+
+            <div class="legend">
+                
+                <span id="workload"></span>
+                <span>Workload</span>
+                
+            </div>
+
+            <div class="legend">
+
+                <span id="proficiency"></span>
+                <span>Proficiency</span>
+                
+            </div>
+
+            <div class="legend">
+
+                <span id="difficulty"></span>
+                <span>Difficulty</span>
+                
+            </div>
+
+            <div class="legend">
+                
+                <span id="engagement"></span>
+                <span>Engagement</span>
+                    
+            </div>
+         
+        </div>
+    </div>
+
+</body>
+</html>

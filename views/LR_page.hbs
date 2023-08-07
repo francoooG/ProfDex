@@ -1,0 +1,63 @@
+<html>
+<head>
+    <link rel="stylesheet" href="navbar.css">
+    <link rel="stylesheet" href="LR_page.css">
+</head>
+
+<body>
+    <div class="homepage-container">
+        <div class="login-container">
+
+
+            <div class="login-input-container">
+				<h1>Already registered?</h1>
+				<form action="/login" method="POST">
+					<input type="text" class="username" name="username" placeholder="Username" required><br>
+					<input type="password" class="password" name="password" placeholder="Password" required>
+					<br><br><b>[CASE SENSITIVE]</b>
+					<button type="submit" class="userlogon">Login</button>
+				</form>
+				{{#if errors.password_mismatch}}
+					<b class="password-error">Passwords do not match.</b>
+				{{/if}}
+				{{#if errors.invalid_credentials}}
+					<b class="credentials-error">Credentials are incorrect.</b>
+				{{/if}}
+			</div>
+        </div>
+
+        <div class="register-container">
+            <div class="register-header">New User? Join the talks...</div>
+            <div class="register-input-container">
+                <form action="/login" method="POST">
+                    <input type="text" class="registerinput" name="registerusername" placeholder="Username" required><br>
+                    <input type="password" class="registerinput" name="registerpassword" placeholder="Password" required><br>
+                    <input type="password" class="registerinput" name="confirmpassword" placeholder="Confirm Password" required><br>
+                    <input type="text" class="registerinput" name="major" placeholder="Major" required><br>
+                    <input type="text" class="registerinput" name="batchno" placeholder="Batch Number" required><br>
+                    <input type="text" class="registerinput" name="email" placeholder="Email" required><br>
+                    <div class="register-button">
+                        <button type="submit" class="userregister">Register</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+	<div id="navbar">
+        <a class="mainpage" href="/">Profdex</a>
+        <span class="navbar-buttons">
+            <a class="menu" href="/editprofile">About Me</a>
+			<a class="menu" href="/createpost">Create Review</a>
+            <a class="menu" href="/help">Help</a>
+        </span>
+        <span class="search-buttons">
+            <form action="/viewprof" method="post">
+				<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+				<button type="submit" id="searchbutton"></button>
+			</form>
+        </span>
+    </div>
+
+</body>
+</html>

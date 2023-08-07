@@ -1,0 +1,141 @@
+@font-face {
+    font-family: 'proxima_nova_rgbold';
+    src: url('https://litmus.com/fonts/Emails/proximanova-bold-webfont.eot');
+    src: url('https://litmus.com/fonts/Emails/proximanova-bold-webfont.eot?#iefix') format('embedded-opentype'),
+         url('https://litmus.com/fonts/Emails/proximanova-bold-webfont.woff') format('woff'),
+         url('https://litmus.com/fonts/Emails/proximanova-bold-webfont.ttf') format('truetype'),
+         url('https://litmus.com/fonts/Emails/proximanova-bold-webfont.svg#proxima_nova_rgbold') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body {
+    margin: 0;
+    position: relative;
+    display: flex;
+    width:100%;
+    background-image: url('images/Background.png'); 
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+    
+}
+
+.header {
+    background-color: #f1f1f1;
+    padding: 30px;
+    text-align: center;
+}
+
+#navbar {
+    position: fixed;
+    top: 0;
+    display: flex;
+    z-index:1;
+    overflow: hidden;
+    background-color: #999999;
+    border-bottom: 1px solid #1a1a1a;
+    width: 100%;
+    background-image: url('images/NavBackground.png'); 
+}
+
+.menu {
+    float: left;
+    display: block;
+    text-align: center;
+    padding: 1rem;
+    text-decoration: none;
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+    font-size: 1rem;
+    transition: 1s;
+}
+
+.mainpage {
+    float: left;
+    display: block;
+    color: white;
+    background-color: #79d279;
+    text-align: center;
+    padding: 13px 10px;
+    text-decoration: none;
+    font-family: 'proxima_nova_rgbold';
+    font-size: 1.4rem;
+}
+
+a.menu {
+    color: white;
+    margin-top: 2px;
+}
+
+a.menu:hover {
+    background-color: #e6e6e6;
+    color: #737373;
+}
+
+.navbar-buttons {
+    display:flex;
+    width:50%;
+}
+
+.search-buttons {
+    display:flex;
+    align-items: center;
+    justify-content:flex-end;
+    width:50%;
+}
+
+
+#searchbutton {
+    background-image: url('images/Search.png');
+    background-position: center; 
+	background-size: cover;
+    position: absolute;
+	margin-right: 12px;
+	margin-top: 9px;
+    top: 0;
+    right: 0;
+    width: 35px;
+    height: 35px;
+    transition: 1s;
+    border-color: #ffbb99;
+	background-color: #ff884d;
+    border-style: solid;
+    border-radius: 5px;
+}
+
+#searchbutton:hover {
+    background-color: #e64d00;
+}
+
+.search {
+	margin-top: 9px;
+    margin-right: 60px;
+    width: 200px; 
+    height: 35px; 
+    border-radius: 5px;
+    font-size: 0.875rem; 
+    padding: 0 0.5em;
+    border-color: white; 
+    border-style: solid;
+}
+
+.login-button {
+    display:absolute;
+	text-align: center;
+	padding: 1px 1px 1px;
+    margin:0;
+    text-decoration: none;
+	height: 20px;
+	width: 60px;
+    margin-right: 15px;
+    border: none;
+    border-radius: 5px;
+    background-color: green;
+    color: white;
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+}
+
+.login-button:hover {
+    background-color: rgb(74, 222, 74);
+}

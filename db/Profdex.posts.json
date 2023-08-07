@@ -1,0 +1,414 @@
+[{
+  "_id": {
+    "$oid": "64bd3e5f6b97158dbc26f3df"
+  },
+  "aPost": {
+    "text": "I don't like this prof... again!"
+  },
+  "to": "64bccc3a6b0748f290760956",
+  "op": "64bd32256b97158dbc26f3c3",
+  "opname": "TheGreatestChowman",
+  "course": "CCAPDEV",
+  "toname": "Doctor Jihyo",
+  "generosity": 6,
+  "difficulty": 4,
+  "engagement": 2,
+  "proficiency": 6,
+  "workload": 10
+},
+{
+  "_id": {
+    "$oid": "64bd44bf6b97158dbc26f3f1"
+  },
+  "aPost": {
+    "text": "This prof.. ok."
+  },
+  "to": "64bccc3a6b0748f290760956",
+  "op": "64bd65d96b97158dbc26f3f6",
+  "opname": "SleeperWeeper",
+  "course": "IT-PROG",
+  "toname": "Doctor Jihyo",
+  "generosity": 4,
+  "difficulty": 2,
+  "engagement": 6,
+  "proficiency": 8
+},
+{
+  "_id": {
+    "$oid": "64bd467d6b97158dbc26f3f2"
+  },
+  "aPost": {
+    "text": "I don't like this prof..."
+  },
+  "to": "64bccc3a6b0748f290760956",
+  "op": "64bd32256b97158dbc26f3c3",
+  "opname": "TheGreatestChowman",
+  "course": "CCPROG1",
+  "toname": "Doctor Jihyo",
+  "difficulty": 4,
+  "engagement": 10,
+  "generosity": 2,
+  "proficiency": 6,
+  "workload": 4
+},
+{
+  "_id": {
+    "$oid": "64bd47cf6b97158dbc26f3f3"
+  },
+  "aPost": {
+    "text": "Run away but we're running in circles!"
+  },
+  "to": "64bc07f105cd077c44e52ce3",
+  "op": "64bd32256b97158dbc26f3c3",
+  "opname": "TheGreatestChowman",
+  "course": "CCINFOM",
+  "toname": "Professor Malone",
+  "difficulty": 2,
+  "engagement": 8,
+  "generosity": 4,
+  "proficiency": 6,
+  "workload": 10
+},
+{
+  "_id": {
+    "$oid": "64bd717a6b97158dbc26f411"
+  },
+  "aPost": {
+    "text": "Easssyyy(ly the best prof for CCINFOM!!)"
+  },
+  "to": "64bc07f105cd077c44e52ce3",
+  "op": "64bd712e6b97158dbc26f40b",
+  "opname": "ArcherMarcher",
+  "course": "CCINFOM",
+  "toname": "Professor Malone",
+  "difficulty": 2,
+  "engagement": 4,
+  "generosity": 6,
+  "proficiency": 8,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64bd74076b97158dbc26f416"
+  },
+  "aPost": {
+    "text": "I slept through his class, really great professor! I suggest getting a good pillow during his lectures for the best experience..."
+  },
+  "to": "64bc07f105cd077c44e52ce3",
+  "op": "64bd65d96b97158dbc26f3f6",
+  "opname": "SleeperWeeper",
+  "course": "CCINFOM",
+  "toname": "Professor Malone",
+  "difficulty": 4,
+  "engagement": 2,
+  "generosity": 8,
+  "proficiency": 10,
+  "workload": 6
+},
+{
+  "_id": {
+    "$oid": "64bd74ab6b97158dbc26f41c"
+  },
+  "aPost": {
+    "text": "Really got my legs moving even though im sleepy, good professor!"
+  },
+  "to": "64bcd1cc6b0748f29076095a",
+  "op": "64bd65d96b97158dbc26f3f6",
+  "opname": "SleeperWeeper",
+  "course": "GEDANCE",
+  "toname": "Professor Jackson",
+  "difficulty": 6,
+  "engagement": 4,
+  "generosity": 2,
+  "proficiency": 8,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64bd74d56b97158dbc26f420"
+  },
+  "aPost": {
+    "text": "Real sick moves! This professor shakes it beyond the grave!"
+  },
+  "to": "64bcd1cc6b0748f29076095a",
+  "op": "64bd746f6b97158dbc26f418",
+  "opname": "TrickTocker",
+  "course": "GEDANCE",
+  "toname": "Professor Jackson",
+  "difficulty": 10,
+  "engagement": 8,
+  "generosity": 8,
+  "proficiency": 10,
+  "workload": 10
+},
+{
+  "_id": {
+    "$oid": "64bd76046b97158dbc26f424"
+  },
+  "aPost": {
+    "text": "Calorie burner, but a decent professor nonetheless. I'm not dancer but he got my hips swaying!"
+  },
+  "to": "64bcd1cc6b0748f29076095a",
+  "op": "64bd32256b97158dbc26f3c3",
+  "opname": "TheGreatestChowman",
+  "course": "GEDANCE",
+  "toname": "Professor Jackson",
+  "difficulty": 6,
+  "engagement": 8,
+  "generosity": 8,
+  "proficiency": 8,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64bd77676b97158dbc26f427"
+  },
+  "aPost": {
+    "text": "He's got the passion for learning and I really appreciate that. I'll be honest, making an artificial intelligence machine project looked daunting, be he really guided us throughout the way."
+  },
+  "to": "64bcd1386b0748f290760958",
+  "op": "64bd32256b97158dbc26f3c3",
+  "opname": "TheGreatestChowman",
+  "course": "CCPROG1",
+  "toname": "Professor Gabriel",
+  "difficulty": 8,
+  "engagement": 6,
+  "generosity": 2,
+  "proficiency": 4,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64bd783c6b97158dbc26f42a"
+  },
+  "aPost": {
+    "text": "For his level of experience, he really is a great professor. It was my first time studying programming and it felt super straightforward to understand. I am now looking forward to learning more about programming languages because of him!"
+  },
+  "to": "64bcd1386b0748f290760958",
+  "op": "64bd746f6b97158dbc26f418",
+  "opname": "TrickTocker",
+  "course": "CCPROG1",
+  "toname": "Professor Gabriel",
+  "difficulty": 6,
+  "engagement": 4,
+  "generosity": 8,
+  "proficiency": 2,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64bd7a2b6b97158dbc26f42e"
+  },
+  "aPost": {
+    "text": "One of my greatest inspirations in being a lasallian! You can really feel the fire and passion when he teaches, he really loves what he is doing!"
+  },
+  "to": "64bcd1386b0748f290760958",
+  "op": "64bd712e6b97158dbc26f40b",
+  "opname": "ArcherMarcher",
+  "course": "CCPROG1",
+  "toname": "Professor Gabriel",
+  "difficulty": 2,
+  "engagement": 8,
+  "generosity": 6,
+  "proficiency": 8,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64bd7bd46b97158dbc26f437"
+  },
+  "aPost": {
+    "text": "Really interesting professor... had to learn basics of IT hardware, tools, and concepts... but we ended up getting into extra information like the evil bit RFCs. If you like supplementary knowledge doc's a good pick!"
+  },
+  "to": "64bcd2146b0748f29076095c",
+  "op": "64bd712e6b97158dbc26f40b",
+  "opname": "ArcherMarcher",
+  "course": "CSADPRG",
+  "toname": "Doctor Clause",
+  "difficulty": 2,
+  "engagement": 6,
+  "generosity": 4,
+  "proficiency": 8,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64bd7c796b97158dbc26f43a"
+  },
+  "aPost": {
+    "text": "Doc really goes for the extra mile, I really enjoyed all his extra information on top of the basics! The stuff he teaches aren't needed for the course but its a real boost since I do know it will be included in my future courses. I really enjoyed his teachings on protocols like tftp, which is weirdly way beyond the IT basics. Nonetheless, really great prof!"
+  },
+  "to": "64bcd2146b0748f29076095c",
+  "op": "64bd7b706b97158dbc26f432",
+  "opname": "ChoiceManor",
+  "course": "CCINFOM",
+  "toname": "Doctor Clause",
+  "difficulty": 4,
+  "engagement": 8,
+  "generosity": 6,
+  "proficiency": 2,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64bd7d086b97158dbc26f43e"
+  },
+  "aPost": {
+    "text": "Evil bit super scary... it makes me sleep and weep :("
+  },
+  "to": "64bcd2146b0748f29076095c",
+  "op": "64bd65d96b97158dbc26f3f6",
+  "opname": "SleeperWeeper",
+  "course": "CSADPRG",
+  "toname": "Doctor Clause",
+  "difficulty": 6,
+  "engagement": 4,
+  "generosity": 2,
+  "proficiency": 8,
+  "workload": 6
+},
+{
+  "_id": {
+    "$oid": "64bd7eb56b97158dbc26f441"
+  },
+  "aPost": {
+    "text": "I guess he's alright... I can't tell if it's the subject that makes me want to weep or it's his teaching? But I got through his class and that makes him ok."
+  },
+  "to": "64bcd1936b0748f290760959",
+  "op": "64bd65d96b97158dbc26f3f6",
+  "opname": "SleeperWeeper",
+  "course": "CCDSTRU",
+  "toname": "Doctor Adams",
+  "difficulty": 4,
+  "engagement": 6,
+  "generosity": 8,
+  "proficiency": 4,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64bd7fed6b97158dbc26f448"
+  },
+  "aPost": {
+    "text": "He teaches straight to the point but a bit fast, I can't blame him I guess since algorithms had a lot of topics to tackle. Though the first few lessons really felt fast when it came to the Big-Os and whatnot, especially when we had to apply the concepts of summations which was super vague. The rest were okay though from graphs to trees."
+  },
+  "to": "64bcd1936b0748f290760959",
+  "op": "64bd7b706b97158dbc26f432",
+  "opname": "ChoiceManor",
+  "course": "CCDSALG",
+  "toname": "Doctor Adams",
+  "difficulty": 8,
+  "engagement": 4,
+  "generosity": 2,
+  "proficiency": 6,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64bd80976b97158dbc26f44b"
+  },
+  "aPost": {
+    "text": "Guess he's alright, not the best but not the worst... Number theory was funny though since he barely taught it..."
+  },
+  "to": "64bcd1936b0748f290760959",
+  "op": "64bd746f6b97158dbc26f418",
+  "opname": "TrickTocker",
+  "course": "CCDSALG",
+  "toname": "Doctor Adams",
+  "difficulty": 8,
+  "engagement": 6,
+  "generosity": 8,
+  "proficiency": 8,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64ca8f0b351a8ed3d68bb7aa"
+  },
+  "aPost": {
+    "text": "Whatever..."
+  },
+  "to": "64bccc3a6b0748f290760956",
+  "op": "64bd32256b97158dbc26f3c3",
+  "opname": "TheGreatestChowman",
+  "course": "CCPROG1",
+  "toname": "Doctor Jihyo",
+  "difficulty": 8,
+  "engagement": 6,
+  "generosity": 2,
+  "proficiency": 4,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64ca93f4351a8ed3d68bb7ab"
+  },
+  "aPost": {
+    "text": "Yeah this prof is just okay"
+  },
+  "to": "64bccc3a6b0748f290760956",
+  "op": "64bd65d96b97158dbc26f3f6",
+  "opname": "SleeperWeeper",
+  "course": "IT-PROG",
+  "toname": "Doctor Jihyo",
+  "difficulty": 6,
+  "engagement": 8,
+  "generosity": 8,
+  "proficiency": 4,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64ca941a351a8ed3d68bb7ac"
+  },
+  "aPost": {
+    "text": "changed my mind... he's bad..."
+  },
+  "to": "64bccc3a6b0748f290760956",
+  "op": "64bd65d96b97158dbc26f3f6",
+  "opname": "SleeperWeeper",
+  "course": "IT-PROG",
+  "toname": "Doctor Jihyo",
+  "difficulty": 6,
+  "engagement": 4,
+  "generosity": 2,
+  "proficiency": 8,
+  "workload": 2
+},
+{
+  "_id": {
+    "$oid": "64ca9426351a8ed3d68bb7ad"
+  },
+  "aPost": {
+    "text": "I agree with SleeperWeeper here"
+  },
+  "to": "64bccc3a6b0748f290760956",
+  "op": "64bd32256b97158dbc26f3c3",
+  "opname": "TheGreatestChowman",
+  "course": "CCPROG1",
+  "toname": "Doctor Jihyo",
+  "difficulty": 8,
+  "engagement": 2,
+  "generosity": 2,
+  "proficiency": 4,
+  "workload": 6
+},
+{
+  "_id": {
+    "$oid": "64cf395228e6f92e6d831346"
+  },
+  "aPost": {
+    "text": "Really good!!!"
+  },
+  "op": "64bd65d96b97158dbc26f3f6",
+  "to": "64bc07f105cd077c44e52ce3",
+  "course": "CSNETWK",
+  "opname": "SleeperWeeper",
+  "toname": "Professor Malone",
+  "difficulty": 8,
+  "engagement": 4,
+  "generosity": 8,
+  "proficiency": 10,
+  "workload": 10,
+  "__v": 0
+}]

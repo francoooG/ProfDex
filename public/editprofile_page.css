@@ -1,0 +1,184 @@
+body {
+    background-image: url("/images/Background.png");
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.homepage-container {
+    display: flex;
+    margin-top: 54px;
+    background-color: transparent;
+    width: 100%;
+    justify-content: center;
+}
+
+.editprofile-container {
+    display:flex;
+    flex-direction: column;
+    width: 1400px;
+    height: 480px;
+    background-image: linear-gradient(to bottom, #ffffff, #dedede);
+    box-shadow: 0 0 5px rgb(116, 116, 116);
+}
+
+.top-part-container {
+    display: flex;
+    background-color: transparent;
+    width: 1400px;
+    height: 300px;
+}
+
+.profile-picture {
+    display:flex;
+    width: 500px;
+    height: 500px;
+    justify-content: center;
+    align-items: center;
+    background-color: transparent;
+}
+
+.user-dp {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background-image: url("images/student.jpg");
+    background-position: center center;
+    background-size: cover;
+    overflow: hidden;
+}
+
+.user-info-container {
+    width: 900px;
+    height: 500px;
+    background-color: transparent;
+}
+
+.user-info {
+    margin: 100px 25px 25px 25px;
+    width: 850px;
+    height: 200px;
+    background-color: transparent;
+}
+
+.firstrow {
+    display: flex;
+    justify-content: space-between;
+    width: 850px;
+    height: 100px;
+    background-color: transparent;
+}
+
+.edit-user-input {
+    box-shadow: 2px 2px 5px rgb(139, 138, 138);
+    border: none;
+    border-radius: 5px;
+    font-size: 15px;
+    padding: 10px;
+    width: 400px;
+    height: 40px;
+}
+
+.edit-user {
+    box-shadow: 2px 2px 5px rgb(139, 138, 138);
+    border: none;
+    border-radius: 5px;
+    font-size: 15px;
+    padding: 10px;
+    width: 400px;
+    height: 40px;
+	background-color: #d0d0d0;
+}
+
+.edit-user-input:focus{
+    outline: solid 2px rgb(0, 122, 26);
+}
+
+input.edit-bio-input {
+    font-size: 15px;
+    width: 850px;
+    height: 130px;
+    resize: none;
+}
+
+.bottom-part-container {
+    display:flex;
+    height: 400px;
+    background-color: transparent;
+}
+
+.user-post-history-container {
+    font-size: 30px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+	margin-top: 200px;
+    width: 100%;
+    height:auto;
+    background-color: transparent;
+}
+
+.save-changes-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+    background-color: transparent;
+}
+
+a.save-changes-button {
+	font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+	text-decoration: none;
+    border: none;
+    background-color: green;
+    color: white;
+    font-size: 15;
+    padding: 5px 10px 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.save-changes-button:hover {
+    background-color: rgb(52, 229, 52);
+}
+
+.review-container{
+    position: relative;
+    width: 100%;
+    height: 150px;
+    border-style: solid;
+    border-color: black;
+	background-color: white;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
+.review-upper{
+    font-size: 1rem;
+    display: flex;
+    width: 100%;
+    height: 40px;
+    border-top: 0px;
+    border-left: 0px;
+    border-right: 0px;
+    border-color: black;
+    border-style: solid;
+}
+.prof-name{
+    margin-left: 10px;
+    margin-top: auto;
+    margin-bottom: auto;
+	text-decoration: none;
+	color: black;
+	font-weight: bold;
+}
+.course-taken{
+    margin-left: 30px;
+    margin-top: auto;
+    margin-bottom: auto;
+    font-weight: normal;
+}
+.review-text{
+    font-size: 1rem;
+    font-weight:lighter;
+    padding-left: 10px;
+    padding-right: 10px;
+}

@@ -1,0 +1,234 @@
+html { 
+	overflow-y: scroll; 
+	overflow-x:hidden; 
+}
+
+body {
+    position: absolute;
+    height:100%;
+}
+
+#upvote {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/FilterSprites.png) 0 0;
+	background-position: 0px 0px;
+}
+
+#upvote:hover {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/FilterSprites.png) 0 0;
+	background-position: -45px 0px;
+}
+
+#downvote {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/FilterSprites.png) 0 0;
+	background-position: -90px 0px;
+}
+
+#downvote:hover {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/FilterSprites.png) 0 0;
+	background-position: -135px 0px;
+}
+
+.review-container {
+    position: relative;
+    display:inline-flex;
+    margin-top: 130px;
+	margin-left: 300px;
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+}
+
+.actual-review-container {
+	 position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 50px;
+    width: 1000px;
+}
+
+#professorname {
+	text-decoration: none;
+    font-family: 'proxima_nova_rgbold';
+	font-size: 25px;
+	color: #e65c00;
+}
+
+#filter {
+    position: absolute;
+	display:inline-flex;
+    width: 100%;
+    height: 60px;
+	background-image: url('images/ReviewFilterBackground.png'); 
+	margin-top: 50px;
+	border-bottom: 2px solid #666666;
+}
+
+a.filter {
+    position: absolute;
+    text-decoration: none;
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+    font-size: 1rem;
+	color: #595959;
+}
+
+a.page {
+    position: absolute;
+    text-decoration: none;
+    font-family: 'proxima_nova_rgbold';
+    font-size: 1rem;
+	color: #595959;
+}
+
+a.text-comment {
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+    color: #595959;
+    margin-left: 10px;
+	margin-top: 60px;
+}
+
+#comment {
+    position: relative;
+    top: 0;
+    z-index:0;
+    overflow: hidden;
+    background-image: url('images/TextBackground.png'); 
+	margin-top: 22%;
+	border-radius: 5px;
+    border: 2px solid #999999;
+    resize: vertical;
+    width: 1280px;
+    height: 260px;
+}
+
+#reply-comment {
+    position: absolute;
+    top: 0;
+    z-index:1;
+    overflow: hidden;
+    background-image: url('images/TextBackground.png'); 
+	margin-top: 37.5%;
+	margin-left: 100px;
+	border-radius: 5px;
+    border: 2px solid #999999;
+    resize: vertical;
+    width: 1280px;
+    height: 140px;
+}
+
+a.submit {
+    position: absolute;
+    display: inline-block;
+    text-decoration: none;
+    margin-top: 565px;
+    margin-left: 1135px;
+    background-color: #e6e6e6;
+    border-radius: 5px;
+    color: black;
+    width: 9rem;
+    height: 1.4rem;
+    font-family: 'proxima_nova_rgbold';
+    font-size: 1.3rem;
+    color: #595959;
+    text-align: center;
+    transition: 0.3s;
+}
+
+a.submit:hover {
+    background-color: black;
+    color: #d9d9d9;
+}
+
+a.comment {
+	position: absolute;
+	text-decoration: none;
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+	font-size: 1rem;
+	color: white;
+	margin-top: 567px;
+	margin-left: 1010px;
+}
+
+a.reply {
+	position: absolute;
+	text-decoration: none;
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+	font-size: 1rem;
+	color: #595959;
+	margin-top: 567px;
+	margin-left: 1510px;
+}
+
+a.comment-username {
+	position: absolute;
+	text-decoration: none;
+	color: black;
+	font-family: 'proxima_nova_rgbold';
+	margin-left: 60px;
+	margin-top: 20px;
+}
+
+#lot {
+	margin-top: 120px;
+    position: relative;
+    align-items: flex-start;
+    background-color: transparent;
+}
+
+.primary-comment {
+    position: relative;
+    display: inline-block;
+    top: 0;
+    display: flex;
+    z-index:1;
+    overflow: hidden;
+    background-image: url('images/TextBackground.png'); 
+	border-radius: 5px;
+    border-bottom: 3px solid #999999;
+    width: 1285px;
+    height: 200px;
+}
+
+.secondary-comment {
+    position: absolute;
+    display: inline-block;
+    top: 0;
+    display: flex;
+    z-index:1;
+    overflow: hidden;
+    background-image: url('images/TextBackground.png'); 
+	border-radius: 5px;
+    border-bottom: 3px solid #999999;
+    width: 1185px;
+    height: 150px;
+}
+
+.comment-header {
+	position: absolute;
+    background-image: url('images/ReviewHeaderBackground.png');
+	border-radius: 5px;
+    border-bottom: 3px solid #999999;
+    width: 1285px;
+    height: 50px;
+}
+
+.comment-profile {
+    position: absolute;
+	background-image: url('images/student2.jpg');
+    width: 37px;
+    height: 37px;
+    margin-left: 10px;
+	margin-top: 10px;
+    border-radius: 50%;
+}

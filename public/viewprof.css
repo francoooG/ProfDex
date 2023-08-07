@@ -1,0 +1,177 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background-image: url("/images/Background.png");
+    background-size: cover;
+    min-height: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+h2 {
+    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-weight: lighter;
+    opacity: 25%;
+}
+
+option {
+    font-size: 1.5rem;
+}
+
+.container {
+    min-height: 100px;
+	overflow: hidden;
+    background-size: cover;
+    margin-top: 54px;
+    width:80%;
+    border-style: solid;
+    border-width: 0.75px;
+    border-color: grey;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+    justify-content: center;
+    border-top: 0px;
+    border-bottom: 0px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+.upper{
+    display: flex;
+}
+
+.left-side {
+    flex: 1;
+}
+
+.user-dp{
+    position: relative;
+    background-image: url("/images/teacher.jpg");
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center center;
+    overflow: hidden;
+    margin-top: 50px;
+    margin-left: 50px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+.user-dp:hover {
+    width: 310px;
+    height: 310px;
+    transition: 0.2s;
+}
+
+.right-side-bio {
+	margin-left: 20px;
+	margin-right: 60px;
+    height: 360px;
+	width: 700px;
+}
+
+.row1{
+    display:flex;
+}
+
+.bio-username {
+    width: 50%;
+}
+.profname {
+    font-size: 1.75rem;
+}
+
+.bio-courses {
+    width: 50%;
+}
+.courselist {
+    font-size: 1.5rem;
+}
+
+.starting-term {
+    border: 1px;
+}
+
+.startterm {
+    font-size: 1.5rem;
+}
+
+.bio-text {
+    margin: auto;
+    border: 1px;
+}
+.bio {
+    font-size: 1.25rem;
+}
+
+.reviewheader {
+    position: relative;
+    margin-left: 50px;
+}    
+.review-box {
+    border: 1px;
+    border-style: solid;
+    border-color: black;
+    border-radius: 5px;
+    height: 200px;
+    width: 90%;
+    margin-left: 50px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    background-image: url("/images/ReviewBackground.png");
+}
+.review-box:hover {
+    opacity: 75%;
+    width: 91%;
+    transition: 0.5s;
+}   
+
+.review-box-upper {
+    display: flex;
+    border-top: 0px;
+    border-left: 0px;
+    border-right: 0px;
+    border-style: solid;
+    border-bottom-width: 1px;
+    height: 35%;
+    background-image: url("/images/ReviewHeaderBackground.png");
+}
+
+.review-box-main {
+    padding-left: 10px;
+}
+
+.username {
+	text-decoration: none;
+	color: black;
+    font-size: 1.5rem;
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-left: 20px;
+}
+
+span.course-term{
+    margin-left: 10px;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.review-dp {
+    border-radius: 50%;
+    background-size: cover;
+    background-position: 50% 50%;
+    width: 50px;
+    height: 50px;
+    position: relative;
+    top: 5px;
+    left: 10px;
+}
+
+#review {
+    background-image: url("/images/student.jpg");
+}

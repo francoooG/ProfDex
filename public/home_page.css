@@ -1,0 +1,135 @@
+.homepage-container {
+    margin-top: 54px;
+    background-color: transparent;
+    width: 100%;
+}
+
+.filter-navbar-container {
+    background-color: #9e9e9e;
+}
+
+.filter-navbar {
+    display: flex;
+    height: 50px;
+    align-items: center;
+    background-color: transparent;
+    width: 100%;
+}
+
+.filter-button {
+    border-color: transparent;
+    background-color: transparent;
+    color: white;
+    font-size: medium;
+    height:85%;
+    padding: 10px;
+    font-family: 'Bootstrap', sans-serif;
+    border-right: solid 1px #1a1a1a;
+}
+
+.filter-button:nth-child(4) {
+    border-color: transparent;
+}
+
+.filter-button:hover {
+    background-color: #737373;
+    transition: 0.5s;   
+}
+
+
+.filter-button.active {
+    background-color: rgb(253, 207, 123);
+    color: black;
+    border-radius: 5px;
+}
+
+.professor-thumbnail-container {
+    display:flex;
+    justify-content: center;
+    font-family: 'Bootstrap', sans-serif;
+    font-size: 13px;
+}
+
+.professor-thumbnail {
+    display:flex;
+    flex-flow: wrap;
+    min-height: 100px;
+	overflow: hidden;
+    margin-top: 30px;
+    background-image: linear-gradient(rgb(225, 225, 225), rgb(189, 189, 189));
+    width: 1080px;
+    border-radius: 10px 10px 10px 10px;   
+    box-shadow: 0 0 10px rgb(116, 116, 116);
+    
+}
+
+.professor-links {
+    display:flex;
+    flex-flow: wrap;
+    justify-content: center;
+    gap: 40px;
+    padding-top: 40px;
+    background-color: transparent;
+}
+
+.profDP {
+    display:flex;
+    align-items: flex-end;
+    height: 300px;
+    width: 300px;
+    background-size: 300px;
+    border: solid 1px #b1b3b1;
+    text-decoration: none;
+    color: black;
+    border-radius: 10px 10px 10px 10px;
+    box-shadow: 5px 5px 10px rgb(116, 116, 116);
+}
+
+.profDP:hover {
+    opacity: 70%;
+    color: #737373;
+    transition: 0.5s;
+}
+
+.profName {
+    display: flex;
+    background-color: white;
+    align-items: center;
+    padding-left: 5px;
+    font-weight: bold;
+    opacity: 80%;
+    width:auto;
+    height:30px; 
+}
+
+.profTitle {
+    display: flex;
+    background-color: white;
+    align-items: center;
+    padding-left: 10px;
+    font-weight: bold;
+    opacity: 80%;
+    width:auto;
+    height:30px;  
+    border-radius: 0px 0px 0px 7px;
+}
+
+.profCourse {
+    display: flex;
+    justify-content: flex-end;
+    padding-right: 10px;
+    flex-grow: 1;
+    background-color: white;
+    align-items: center;
+    padding-left: 10px;
+    font-weight: bold;
+    opacity: 80%;
+    width:auto;
+    height:30px;
+    border-radius: 0px 0px 7px 0px;
+}
+
+.professor-profile {
+    background-color: red;
+    height:320px;
+}

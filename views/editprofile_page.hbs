@@ -1,0 +1,76 @@
+<html>
+<head>
+    <link rel="stylesheet" href="editprofile_page.css">
+    <link rel="stylesheet" href="navbar.css">
+</head>
+
+<body>
+    <div class="homepage-container">                    <!--red-->
+        <div class="editprofile-container">             <!--blue-->
+            <div class="top-part-container">
+                <div class="profile-picture">               <!--yellow-->
+                    <div class="user-dp" id="image-input"></div>             <!--orange-->
+                </div>
+                
+				<form action="/editprofile" method="post">
+					<div class="user-info-container">           <!--purple-->
+						<div class="user-info">                 <!--cyan-->
+							<div class="firstrow"> <!--beige-->
+								<input type="text" class="edit-user" name="username" placeholder="Username" value="{{ userData.aUser.username }}" readonly="readonly" required>
+								<input type="text" class="edit-user-input" name="email" placeholder="Email" value="{{ userData.aUser.email }}" required>
+							</div>
+							<div class="firstrow"> <!--beige-->
+								<input type="text" class="edit-user-input" name="idno" placeholder="ID Number" value="{{ userData.aUser.idbatch }}" required>
+								<input type="text" class="edit-user-input" name="major" placeholder="Major" value="{{ userData.aUser.course }}" required>
+							</div>
+							<div class="secondrow">
+								<input type="text" class="edit-bio-input" name="user_bio" placeholder="Bio" value="{{ userData.aUser.bio }}" required>
+							</div> 
+							<div class="save-changes-container">
+								<button id="submit" type="submit" class="save-changes-button">Save Changes</button>
+							</div>
+						</div>
+					</div>
+				</form>
+            </div>
+
+			<div class="user-post-history-container">
+				Some of my posts:
+			</div>
+
+            {{#each postData}}
+				<div class="review-container">
+					<div class="review-upper">
+						<a class="prof-name" href="/viewprof?id={{to}}">{{toname}}</a>
+						<div class="course-taken">{{course}}</div>
+					</div>
+					<div class="review-lower">
+						<p class="review-text">{{aPost.text}}</p>
+					</div>
+				</div>
+			{{/each}}
+ 
+    </div>
+	
+	<div id="navbar">
+        <a class="mainpage" href="/">Profdex</a>
+        <span class="navbar-buttons">
+            <a class="menu" href="/editprofile">About Me</a>
+			<a class="menu" href="/createpost">Create Review</a>
+			<a class="menu" href="/help">Help</a>
+        </span>
+        <span class="search-buttons">
+			{{#if loggedInUser}}
+				<a class="login-button" href="/logout">Logout</a>
+			{{else}}
+				<a class="login-button" href="/login">Login</a>
+			{{/if}}
+            <form action="/viewprof" method="post">
+				<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+				<button type="submit" id="searchbutton"></button>
+			</form>
+        </span>
+    </div>
+
+</body>
+</html>

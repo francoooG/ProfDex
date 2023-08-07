@@ -1,0 +1,98 @@
+<html>
+<head>
+    <link rel="stylesheet" href="navbar.css">
+	<link rel="stylesheet" href="reviewlist.css">
+</head>
+
+<body>
+	{{#with professorData}}
+		<div id="filter">
+			<a id="professorname" href="/viewprof?id={{_id}}" style="position:absolute; margin-top: 20px; margin-left: 42%;">{{aProfessor.title}} {{aProfessor.lastname}}</a>
+
+		</div>
+	{{/with}}
+
+		
+			<div class="review-container">
+					<div class="actual-review-container">
+					{{#each postData}}
+						<div id="review">
+							<div class="review-header">
+								<a class="review-author" href="/viewreview?id={{_id}}">By: {{opname}}</a>
+							</div>
+							<img id="generosity" src="images/transparent.png" width="1" height="1" style="margin-left: 20px; margin-top: 225px;">
+							<div class="bar" 
+								 style="
+									 margin-top: 200px;
+									 margin-left: 22px;
+									 width: 25px;
+									 transform-origin: bottom;
+									 transform: scaleY({{generosity}});
+									 background-color: green">&nbsp
+							</div>
+							<img id="workload" src="images/transparent.png" width="1" height="1" style="margin-left: 68px; margin-top: 225px;">
+							<div class="bar" 
+								 style="
+									 margin-top: 200px;
+									 margin-left: 71px;
+									 width: 25px;
+									 transform-origin: bottom;
+									 transform: scaleY({{workload}});
+									 background-color: green">&nbsp
+							</div>
+							<img id="proficiency" src="images/transparent.png" width="1" height="1" style="margin-left: 115px; margin-top: 225px;">
+							<div class="bar" 
+								 style="
+									 margin-top: 200px;
+									 margin-left: 119px;
+									 width: 25px;
+									 transform-origin: bottom;
+									 transform: scaleY({{proficiency}});
+									 background-color: green">&nbsp
+							</div>
+							<img id="difficulty" src="images/transparent.png" width="1" height="1" style="margin-left: 160px; margin-top: 225px;">
+							<div class="bar" 
+								 style="
+									 margin-top: 200px;
+									 margin-left: 168px;
+									 width: 25px;
+									 transform-origin: bottom;
+									 transform: scaleY({{difficulty}});
+									 background-color: green">&nbsp
+							</div>
+							<img id="engagement" src="images/transparent.png" width="1" height="1" style="margin-left: 210px; margin-top: 225px;">
+							<div class="bar" 
+								 style="
+									 margin-top: 200px;
+									 margin-left: 214px;
+									 width: 25px;
+									 transform-origin: bottom;
+									 transform: scaleY({{engagement}});
+									 background-color: green">&nbsp
+							</div>
+						</div>
+					{{/each}}
+				</div>
+			</div>
+			
+			<div id="navbar">
+			<a class="mainpage" href="/">Profdex</a>
+			<span class="navbar-buttons">
+				<a class="menu" href="/editprofile">About Me</a>
+				<a class="menu" href="/createpost">Create Review</a>
+				<a class="menu" href="/help">Help</a>
+			</span>
+			<span class="search-buttons">
+				{{#if loggedInUser}}
+					<a class="login-button" href="/logout">Logout</a>
+				{{else}}
+					<a class="login-button" href="/login">Login</a>
+				{{/if}}
+				<form action="/viewprof" method="post">
+					<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+					<button type="submit" id="searchbutton"></button>
+				</form>
+			</span>
+		</div>
+</body>
+</html>

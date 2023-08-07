@@ -1,0 +1,25 @@
+{
+  "type": "Compass Connections",
+  "version": {
+    "$numberInt": "1"
+  },
+  "connections": [
+    {
+      "id": "b57ee55e-c7e4-4be0-92f9-578496325c8b",
+      "connectionOptions": {
+        "connectionString": "mongodb://localhost:27017/",
+        "oidc": {
+          "serializedState": "eyJvaWRjUGx1Z2luU3RhdGVWZXJzaW9uIjowLCJzdGF0ZSI6W119"
+        }
+      },
+      "favorite": {
+        "name": "Profdex"
+      },
+      "lastUsed": {
+        "$date": {
+          "$numberLong": "1690197067879"
+        }
+      }
+    }
+  ]
+}

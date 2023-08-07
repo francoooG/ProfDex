@@ -1,0 +1,78 @@
+[{
+  "_id": {
+    "$oid": "64bd32256b97158dbc26f3c3"
+  },
+  "aUser": {
+    "username": "TheGreatestChowman",
+    "course": "BSCS-ST",
+    "idbatch": "121",
+    "bio": "Curry curry chicken curry, ccs = chicken curry studies!",
+    "password": "$2b$15$U6qHaAK.XLArVZlaQpwdc.N1yulblHWezPdHcjcbispuLUbmQm.eW",
+    "email": "chowkingtheking@gmail.com"
+  }
+},
+{
+  "_id": {
+    "$oid": "64bd65d96b97158dbc26f3f6"
+  },
+  "aUser": {
+    "username": "SleeperWeeper",
+    "bio": "Bed weather all day everyday!!",
+    "course": "BSCS-NIS",
+    "idbatch": "120",
+    "password": "$2b$15$U6qHaAK.XLArVZlaQpwdc.N1yulblHWezPdHcjcbispuLUbmQm.eW",
+    "email": "sleepahweepahs@gmail.com"
+  }
+},
+{
+  "_id": {
+    "$oid": "64bd712e6b97158dbc26f40b"
+  },
+  "aUser": {
+    "username": "ArcherMarcher",
+    "bio": "Animo animo, De La Chao!",
+    "course": "BSCS-CSE",
+    "idbatch": "118",
+    "password": "$2b$15$U6qHaAK.XLArVZlaQpwdc.N1yulblHWezPdHcjcbispuLUbmQm.eW",
+    "email": "foreverrr@gmail.com"
+  }
+},
+{
+  "_id": {
+    "$oid": "64bd746f6b97158dbc26f418"
+  },
+  "aUser": {
+    "username": "TrickTocker",
+    "bio": "Aspiring IT Influencer",
+    "course": "BSIT",
+    "idbatch": "119",
+    "password": "$2b$15$U6qHaAK.XLArVZlaQpwdc.N1yulblHWezPdHcjcbispuLUbmQm.eW",
+    "email": "dancedancerevolutionzz@gmail.com"
+  }
+},
+{
+  "_id": {
+    "$oid": "64bd7b706b97158dbc26f432"
+  },
+  "aUser": {
+    "username": "ChoiceManor",
+    "bio": "Letting my brain fall out of my mouth, this course will be the death of me!",
+    "course": "BSCS-MS",
+    "idbatch": "122",
+    "password": "$2b$15$U6qHaAK.XLArVZlaQpwdc.N1yulblHWezPdHcjcbispuLUbmQm.eW",
+    "email": "shcolarrzzz@gmail.com"
+  }
+},
+{
+  "_id": {
+    "$oid": "64cbb4b38ae443b53723fc4e"
+  },
+  "aUser": {
+    "username": "Whiplash",
+    "course": "BSCS-CSE",
+    "idbatch": "121",
+    "password": "$2b$15$OuDFsMB/Kz5jppH9fBGA.usdo/l.nbMCrdIdWg3jCQxclz6JZcCXm",
+    "email": "mathrockerz@gmail.com"
+  },
+  "__v": 0
+}]

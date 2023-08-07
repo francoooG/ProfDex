@@ -1,0 +1,110 @@
+<html>
+<head>
+    <link rel="stylesheet" href="home_page.css">
+    <link rel="stylesheet" href="navbar.css">
+</head>
+
+<body>
+    <div class="homepage-container">
+        <div class="filter-navbar-container">
+            <div class="filter-navbar">
+                <button type="button" class="filter-button active" id="latest">Latest</button>
+                <button type="button" class="filter-button" id="alphaName">Alphabetical Name</button>
+                <button type="button" class="filter-button" id="alphaCourse">Alphabetical Course</button>
+            </div>
+        </div>
+
+        <div class="professor-thumbnail-container">
+            <div class="professor-thumbnail">
+                <div class="professor-links">
+				    {{#each data}}
+						<a class="profDP" href='/reviewlist?id={{_id}}' style="background-image: url(images/teacher.jpg);">
+							<div class="hiddenDate" style="display:none;">1</div>
+							<div class="profTitle">{{aProfessor.title}}</div>
+							<div class="profName">{{aProfessor.lastname}}</div>
+							<div class="profCourse">{{aProfessor.coursename}}</div>
+						</a>	
+					{{/each}}
+                </div>
+            </div>
+        </div>
+
+		<div id="navbar">
+			<a class="mainpage" href="/">Profdex</a>
+			<span class="navbar-buttons">
+				<a class="menu" href="/editprofile">About Me</a>
+				<a class="menu" href="/createpost">Create Review</a>
+                <a class="menu" href="/help">Help</a>
+			</span>
+			<span class="search-buttons">
+				{{#if loggedInUser}}
+					<a class="login-button" href="/logout">Logout</a>
+				{{else}}
+					<a class="login-button" href="/login">Login</a>
+				{{/if}}
+				<form action="/viewprof" method="post">
+					<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+					<button type="submit" id="searchbutton"></button>
+				</form>
+			</span>
+		</div>
+	</div>
+
+    <script>
+        const professorThumbnailContainer = document.querySelector('.professor-thumbnail-container');
+        const profDPElements = professorThumbnailContainer.querySelectorAll('.profDP');
+        const profDPArray = Array.from(profDPElements);
+        const professorThumbnail = document.querySelector('.professor-thumbnail');
+        const professorLinks = document.querySelector('.professor-links');
+        professorThumbnailContainer.appendChild(professorThumbnail);
+        professorThumbnail.appendChild(professorLinks);
+    
+        var button = document.querySelectorAll(".filter-button");
+    
+
+        button.forEach(button => {
+            button.addEventListener("click", function() {
+                switch (button.id) {
+                    case "alphaName":
+                        arrangeSite(".profName");
+                        break;
+                    case "alphaCourse":
+                        arrangeSite(".profCourse");
+                        break;
+                    case "latest":
+                        arrangeSite(".hiddenDate");
+                        break;
+                    default:
+                        alert("error");
+                }
+            });
+        });
+
+        var filterButtons = document.querySelectorAll('.filter-button');
+
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.toggle('active');
+            });
+        });
+
+
+        function arrangeSite(itemTBA) {
+            profDPArray.sort((a, b) => {
+                const itemA = a.querySelector(itemTBA).textContent;
+                const itemB = b.querySelector(itemTBA).textContent;
+                return itemA.localeCompare(itemB);
+            });
+
+            profDPArray.forEach(element => {
+                professorLinks.appendChild(element);
+            });
+        }
+		
+		
+    </script>
+
+
+</body>
+</html>

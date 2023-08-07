@@ -1,0 +1,142 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background-image: url("/images/Background.png");
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+p.bio-text{
+    font-size: 1.25rem;
+    font-weight: normal;
+}
+
+.container{
+	min-height: 100px;
+	overflow: hidden;
+    background-size: cover;
+    margin-top: 54px;
+    width:80%;
+    border-style: solid;
+    border-width: 0.75px;
+    border-color: grey;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+    justify-content: center;
+    border-top: 0px;
+    border-bottom: 0px;
+	background-image: linear-gradient(rgb(225, 225, 225), rgb(189, 189, 189));
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+.user-dp{
+    position: relative;
+    background-image: url("/images/student.jpg");
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center center;
+    overflow: hidden;
+    margin-top: 50px;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+.user-dp:hover {
+    width: 310px;
+    height: 310px;
+    transition: 0.2s;
+}
+
+.upper {
+    display: flex;
+}
+
+.left-side {
+    flex: 1;
+}
+
+.right-side {
+    flex: 2;
+    position: relative;
+    margin-top: 80px;    
+}
+
+.row1{
+    display: flex;
+    margin-bottom: 20px;
+}
+.username{
+    flex: 1;
+}
+.username, .major, .row2, .row3{
+    font-weight: bold;
+}
+.username-name, .major-name, .idnumber{
+    font-size: 2rem;
+    font-weight: 100;
+}
+.major {
+    flex: 1;
+}
+
+.row3 {
+    margin-top: 20px;
+}
+
+.lower{
+    position: relative;
+    margin-top: 20px;
+    margin-right: 20px;
+    margin-left: 20px;
+    font-weight: bold;
+}
+.review-container{
+    position: relative;
+    width: 100%;
+    height: 150px;
+    border-style: solid;
+    border-color: black;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
+.review-container:hover {
+    height: 160px;
+    transition: 0.2s;
+}
+.review-upper{
+    font-size: 1rem;
+    display: flex;
+    width: 100%;
+    height: 40px;
+    border-top: 0px;
+    border-left: 0px;
+    border-right: 0px;
+    border-color: black;
+    border-style: solid;
+}
+.prof-name{
+    margin-left: 10px;
+    margin-top: auto;
+    margin-bottom: auto;
+	text-decoration: none;
+	color: black;
+}
+.course-taken{
+    margin-left: 30px;
+    margin-top: auto;
+    margin-bottom: auto;
+    font-weight: normal;
+}
+.review-text{
+    font-size: 1rem;
+    font-weight:lighter;
+    padding-left: 10px;
+    padding-right: 10px;
+}

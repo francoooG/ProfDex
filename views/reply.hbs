@@ -1,0 +1,58 @@
+<html>
+<head>
+    <link rel="stylesheet" href="navbar.css">
+	<link rel="stylesheet" href="reply.css">
+</head>
+
+<body>
+
+    <div id="navbar">
+        <a class="mainpage" href="/">Profdex</a>
+        <span class="navbar-buttons">
+            <a class="menu" href="/editprofile">About Me</a>
+			<a class="menu" href="/createpost">Create Review</a>
+			<a class="menu" href="/help">Help</a>
+        </span>
+        <span class="search-buttons">
+			{{#if loggedInUser}}
+				<a class="login-button" href="/logout">Logout</a>
+			{{else}}
+				<a class="login-button" href="/login">Login</a>
+			{{/if}}
+            <form action="/viewprof" method="post">
+				<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+				<button type="submit" id="searchbutton"></button>
+			</form>
+        </span>
+    </div>
+	
+	<div id="filter">
+		{{#with userData}}
+			<a id="professorname" href="/viewuser?id={{_id}}" style="position: absolute; margin-top: 20px; margin-left: 100px;">Replying to: {{aUser.username}}</a>
+		{{/with}}
+	</div>
+
+	<div id="lot">
+		{{#with commentData}}
+			<div class="primary-comment" style="margin-left:100px; margin-top:130px;">
+				<div class="comment-header">
+					<a class="comment-profile" href="/viewuser?id={{op}}">
+					<a class="comment-username" href="/viewuser?id={{op}}">{{opname}}</a>
+				</div>
+				<a class="text-comment">@{{toname}} ({{to}}) - {{date}} <br><br> {{aComment.text}}</a>
+			</div>
+		{{/with}}
+    </div>
+
+	{{#with commentData}}
+		<form action="/reply" method="POST">
+			<textarea id="reply-comment" name="commentText" placeholder="Comment here!" required></textarea>
+			<input type="hidden" name="post" value="{{post}}">
+			<input type="hidden" name="to" value="{{op}}">
+			<input type="hidden" name="toname" value="{{opname}}">
+			<button id="submit" type="submit" class="submit">Send</button>
+		</form>
+   {{/with}}
+
+</body>
+</html>

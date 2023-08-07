@@ -1,0 +1,245 @@
+body {
+    position: fixed;
+    height:100%;
+}
+    
+#review {
+    position: relative;
+    display: inline-block;
+    top: 0;
+    display: flex;
+    z-index:1;
+    overflow: hidden;
+    background-image: url('images/ReviewBackground.png'); 
+	border-radius: 5px;
+    border-bottom: 2px solid #8c8c8c;
+    width: 260px;
+    height: 260px; 
+}
+
+.review-header {
+    top: 0;
+    display: flex;
+    z-index:1;
+    overflow: hidden;
+    background-image: url('images/ReviewHeaderBackground.png'); 
+	border-radius: 5px;
+    border-bottom: 2px solid #8c8c8c;
+    width: 270px;
+    height: 25px; 
+}
+
+.bar{
+    position: absolute;
+	transform-origin: bottom;
+    transform: scaleY(2);
+	background-color: green;
+}
+
+#proficiency {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/AttributesSprites.png) 0 0;
+}
+
+#generosity {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/AttributesSprites.png) 0 0;
+	background-position: -44px 0px;
+}
+
+#engagement {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/AttributesSprites.png) 0 0;
+	background-position: -87px 0px;
+}
+
+#workload {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/AttributesSprites.png) 0 0;
+	background-position: -132px 0px;
+}
+
+#difficulty {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/AttributesSprites.png) 0 0;
+	background-position: -169px 0px;
+}
+
+#upvote {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/FilterSprites.png) 0 0;
+	background-position: 0px 0px;
+}
+
+#upvote:hover {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/FilterSprites.png) 0 0;
+	background-position: -45px 0px;
+}
+
+#downvote {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/FilterSprites.png) 0 0;
+	background-position: -90px 0px;
+}
+
+#downvote:hover {
+    position: absolute;
+    width: 31px;
+    height: 26px;
+    background: url(images/FilterSprites.png) 0 0;
+	background-position: -135px 0px;
+}
+
+.review-container {
+    position: relative;
+    display:inline-flex;
+    margin-top: 130px;
+	margin-left: 100px;
+    align-items: flex-start;
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+}
+
+.actual-review-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 50px;
+    width: 1000px;
+}
+
+#professorname {
+	text-decoration: none;
+    font-family: 'proxima_nova_rgbold';
+	font-size: 25px;
+	color: #e65c00;
+}
+
+#filter {
+    position: absolute;
+	display:inline-flex;
+    width: 100%;
+    height: 60px;
+	background-image: url('images/ReviewFilterBackground.png'); 
+	margin-top: 50px;
+	border-bottom: 2px solid #666666;
+}
+
+a.filter {
+    position: relative;
+    text-decoration: none;
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+    font-size: 1rem;
+	color: #595959;
+}
+
+a.page {
+    position: absolute;
+    text-decoration: none;
+    font-family: 'proxima_nova_rgbold';
+    font-size: 1rem;
+	color: #595959;
+}
+
+#text {
+    position: absolute;
+    display: inline-block;
+    top: 0;
+    display: flex;
+    z-index:1;
+    overflow: hidden;
+    background-image: url('images/TextBackground.png'); 
+	margin-left: 300px;
+	border-radius: 5px;
+    border-bottom: 3px solid #999999;
+    width: 975px;
+    height: 260px;
+}
+
+a.text {
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+    color: #595959;
+    margin-left: 10;
+	margin-top: 10;
+}
+
+#comment {
+    top: 0;
+    z-index:1;
+    overflow: hidden;
+    background-image: url('images/TextBackground.png'); 
+	margin-left: -1000px;
+	margin-top: 290px;
+	border-radius: 5px;
+    border: 2px solid #999999;
+    resize: vertical;
+    width: 1275px;
+    height: 260px;
+}
+
+#submit {
+	position: absolute; 
+	margin-left: -100px; 
+	margin-top: 560px; 
+	width:100px; 
+	height:30px; 
+	border-radius: 5px; 
+	border: 2px solid #999999;
+}
+
+a.submit {
+    position: absolute;
+    display: inline-block;
+    text-decoration: none;
+    margin-top: 565px;
+    margin-left: 1135px;
+    background-color: #e6e6e6;
+    border-radius: 5px;
+    color: black;
+    width: 9rem;
+    height: 1.4rem;
+    font-family: 'proxima_nova_rgbold';
+    font-size: 1.3rem;
+    color: #595959;
+    text-align: center;
+    transition: 0.3s;
+}
+
+a.submit:hover {
+    background-color: black;
+    color: #d9d9d9;
+}
+
+a.comment {
+	position: absolute;
+	text-decoration: none;
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+	font-size: 1rem;
+	color: white;
+	margin-top: 567px;
+	margin-left: 1050px;
+}
+
+a.review-author {
+	margin-top: 5px;
+	margin-left: 5px;
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+	color: #595959;
+}

@@ -1,0 +1,50 @@
+<html>
+<head>
+    <link rel="stylesheet" href="navbar.css">
+	<link rel="stylesheet" href="viewcomments.css">
+</head>
+
+<body>
+	<div id="filter">
+		{{#with professorData}}
+			<a id="professorname" href="/viewprof?id={{_id}}" style="position: absolute; margin-top: 10px; margin-left: 100px;">{{aProfessor.title}} {{aProfessor.lastname}}</a>
+		{{/with}}
+		{{#with postData}}
+			<a class="filter" style="margin-top: 37px; margin-left: 100px;">{{course}}</a>
+		{{/with}}
+	</div>
+	<div id="lot">
+		{{#each commentData}}
+			<div class="primary-comment" style="margin-left:100px; margin-top:20px;">
+				<div class="comment-header">
+					<a class="comment-profile" href="/viewuser?id={{op}}">
+					<a class="comment-username" href="/viewuser?id={{op}}">{{opname}}</a>
+					<a class="reply" href="/reply?id={{_id}}" style="margin-left: 1230px; margin-top: 16px;">Reply</a>
+				</div>
+				<a class="text-comment">@{{toname}} ({{to}}) - {{date}} <br><br> {{aComment.text}}</a>
+			</div>
+		{{/each}}
+    </div>
+	
+	<div id="navbar">
+        <a class="mainpage" href="/">Profdex</a>
+        <span class="navbar-buttons">
+            <a class="menu" href="/editprofile">About Me</a>
+			<a class="menu" href="/createpost">Create Review</a>
+			<a class="menu" href="/help">Help</a>
+        </span>
+        <span class="search-buttons">
+			{{#if loggedInUser}}
+				<a class="login-button" href="/logout">Logout</a>
+			{{else}}
+				<a class="login-button" href="/login">Login</a>
+			{{/if}}
+            <form action="/viewprof" method="post">
+				<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+				<button type="submit" id="searchbutton"></button>
+			</form>
+        </span>
+    </div>
+
+</body>
+</html>

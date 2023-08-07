@@ -1,0 +1,91 @@
+[{
+  "_id": {
+    "$oid": "64bccc3a6b0748f290760956"
+  },
+  "aProfessor": {
+    "firstname": "Lim",
+    "lastname": "Jihyo",
+    "coursename": "[CCAPDEV]",
+    "title": "Doctor",
+    "sterm": "Term 2 : 2020-2021",
+    "bio": "Doctor Jihyo graduated from De La Salle University in 1990. Since then he's been teaching programming Courses\n\t\t\t\t\t\t\t\t\tat different universities in the country. Notably, he starred in a crime film named \"Ang Ninong\" as Michael De la Cruz. In 2020 ,\n\t\t\t\t\t\t\t\t\the started teaching at De la Salle University in Manila."
+  }
+},
+{
+  "_id": {
+    "$oid": "64bcd1386b0748f290760958"
+  },
+  "aProfessor": {
+    "firstname": "Denver",
+    "lastname": "Gabriel",
+    "coursename": "[IT-PROG]",
+    "title": "Professor",
+    "sterm": "Term 1 : 2019-2020",
+    "bio": "Professor Gabriel is currently taking up a doctorate degree for Computer Science, specializing in artificial intelligence, he is determined to deliver quality education to his fellow learners of De La Salle University."
+  }
+},
+{
+  "_id": {
+    "$oid": "64bcd1936b0748f290760959"
+  },
+  "aProfessor": {
+    "firstname": "David",
+    "lastname": "Adams",
+    "coursename": "[CCDSALG]",
+    "title": "Doctor",
+    "sterm": "Term 2 : 2021-2022",
+    "bio": "Doctor Adams specializes in the field of sequential circuit research and innovation, he is currently looking for research apprentices for his organization SEQUIT."
+  }
+},
+{
+  "_id": {
+    "$oid": "64bcd1cc6b0748f29076095a"
+  },
+  "aProfessor": {
+    "firstname": "Michael",
+    "lastname": "Jackson",
+    "coursename": "[GEDANCE]",
+    "title": "Professor",
+    "sterm": "Term 3 : 2018-2019",
+    "bio": "Ooh ahh!"
+  }
+},
+{
+  "_id": {
+    "$oid": "64bcd2146b0748f29076095c"
+  },
+  "aProfessor": {
+    "firstname": "Santa",
+    "lastname": "Clause",
+    "coursename": "[CCINFOM]",
+    "title": "Doctor",
+    "sterm": "Term 1 : 2019-2020",
+    "bio": "Ho ho ho! May I make the greatest bit of your Christmas!"
+  }
+},
+{
+  "_id": {
+    "$oid": "64bc07f105cd077c44e52ce3"
+  },
+  "aProfessor": {
+    "firstname": "Post",
+    "lastname": "Malone",
+    "coursename": "[CCINFOM]",
+    "title": "Professor",
+    "sterm": "Term 2 : 2018-2019",
+    "bio": "Worldwide famous rapper, currently a professor at De La Salle University with a focus on IT hardware and networking."
+  }
+},
+{
+  "_id": {
+    "$oid": "64ca7e2d351a8ed3d68bb79f"
+  },
+  "aProfessor": {
+    "firstname": "I'm",
+    "lastname": "New",
+    "coursename": "[CCINFOM]",
+    "title": "Professor",
+    "sterm": "Term 2 : 2018-2019",
+    "bio": "I'm a new professor."
+  }
+}]
