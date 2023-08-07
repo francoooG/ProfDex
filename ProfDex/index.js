@@ -51,7 +51,7 @@ app.set('view cache', false);
 var current;
 
 const sessionStore = MongoStore.create({
-    mongoUrl: 'mongodb://127.0.0.1:27017/Profdex',
+    mongoUrl: process.env.MONGODB_CONNECT_URI,
     mongoOptions: {
         useNewUrlParser: true,
         useUnifiedTopology: true,
