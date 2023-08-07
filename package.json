@@ -18,7 +18,8 @@
     "express-handlebars": "^7.0.7",
     "express-session": "^1.17.3",
     "mongodb": "^5.7.0",
-    "mongoose": "^7.4.0"
+    "mongoose": "^7.4.0",
+    "path": "^0.12.7"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
