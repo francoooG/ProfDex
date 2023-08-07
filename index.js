@@ -16,7 +16,6 @@ const { getProfessorData,
 		user,
 		post
 } = require(__dirname + '/db' + '/controller.js');
-const path = require('path');
 
 const mongoose = require('mongoose');
 const session = require('express-session');
