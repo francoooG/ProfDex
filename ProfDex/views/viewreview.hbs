@@ -75,13 +75,13 @@
 						<a class="comment-profile" href="/viewuser?id={{op}}" style="margin-right: 10px;"></a>
 						<a class="comment-username" href="/viewuser?id={{op}}" style="font-weight: bold; color: #e65c00; margin-right: 10px;">{{opname}}</a>
 						<span style="color: #888; font-size: 0.95em; margin-right: 10px;">@{{toname}} ({{to}}) - {{date}}</span>
-						{{#ifCond op ../loggedInUser._id}}
+						{{#if (or (eq op ../loggedInUser._id) (eq ../userType 'manager'))}}
 						<form action="/deletecomment" method="POST" style="display:inline; margin-left: 10px;">
 							<input type="hidden" name="commentId" value="{{_id}}">
 							<input type="hidden" name="postId" value="{{post}}">
 							<button type="submit" class="delete-comment" style="color:red; background: none; border: none; cursor: pointer;">Delete</button>
 						</form>
-						{{/ifCond}}
+						{{/if}}
 					</div>
 					<div class="text-comment" style="margin-top: 8px; color: #444; font-size: 1.05em;">{{aComment.text}}</div>
 				</div>
