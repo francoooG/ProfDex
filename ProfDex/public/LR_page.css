@@ -136,6 +136,118 @@ b {
     text-decoration: none;
     border: solid 1px black;
     border-radius: 5px;
-    color:white;
+    color: white;
     background-color: rgb(18, 129, 18);
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+}
+
+.userregister:hover {
+    background-color: rgb(0, 112, 60);
+}
+
+.userregister.disabled {
+    background-color: #dc3545;
+    cursor: pointer; /* Temporarily allow clicks even when disabled */
+}
+
+.userregister.disabled:hover {
+    background-color: #c82333;
+}
+
+/* Subject selection styling */
+.subject-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.add-subject-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.add-subject-btn:hover {
+    background-color: #218838;
+}
+
+.selected-subject {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 8px 12px;
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.remove-subject-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 10px;
+}
+
+.remove-subject-btn:hover {
+    background-color: #c82333;
+}
+
+#subjectsList {
+    margin: 10px 0;
+    min-height: 20px;
+}
+
+/* Checklist styling for subjects */
+.subjects-checklist {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    margin-top: 5px;
+}
+
+.subject-checkbox {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 0;
+    transition: background-color 0.2s ease;
+}
+
+.subject-checkbox:hover {
+    background-color: #e9ecef;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin: 0 -8px 8px -8px;
+}
+
+.subject-checkbox input[type="checkbox"] {
+    margin-right: 8px;
+    transform: scale(1.2);
+    cursor: pointer;
+}
+
+.subject-checkbox input[type="checkbox"]:checked {
+    accent-color: #28a745;
 }

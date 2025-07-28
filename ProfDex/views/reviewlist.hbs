@@ -1,6 +1,6 @@
 <html>
 <head>
-    <link rel="stylesheet" href="navbar.css">
+	<link rel="stylesheet" href="navbar.css">
 	<link rel="stylesheet" href="reviewlist.css">
 </head>
 
@@ -13,13 +13,23 @@
 	{{/with}}
 
 		
-			<div class="review-container">
-					<div class="actual-review-container">
+<div class="review-container">
+<div style="color: #e65c00; font-weight: bold; margin-bottom: 8px;">Debug: userType = {{loggedInUser.userType}}</div>
+<button onclick="alert('Your userType is: {{loggedInUser.userType}}')" style="margin-bottom: 16px; padding: 6px 16px; border-radius: 4px; border: none; background: #007bff; color: white; cursor: pointer; font-weight: bold;">Show My UserType</button>
+<div class="actual-review-container">
 					{{#each postData}}
-						<div id="review">
-							<div class="review-header">
-								<a class="review-author" href="/viewreview?id={{_id}}">By: {{opname}}</a>
-							</div>
+<div id="review">
+<div class="review-header" style="display: flex; align-items: center;">
+<a class="review-author" href="/viewreview?id={{_id}}">By: {{opname}}
+{{#if (eq ../postUserTypes.[@index] 'manager')}}<span style="color: red; font-weight: bold; margin-left: 6px;">Manager</span>{{/if}}
+</a>
+{{#if (eq ../userType 'manager')}}
+<form action="/delete-review-and-comments" method="POST" style="display:inline; margin-left: 12px;">
+  <input type="hidden" name="reviewId" value="{{_id}}">
+  <button type="submit" style="color:red; background: none; border: none; cursor: pointer; font-weight: bold;">Delete</button>
+</form>
+{{/if}}
+</div>
 							<img id="generosity" src="images/transparent.png" width="1" height="1" style="margin-left: 20px; margin-top: 225px;">
 							<div class="bar" 
 								 style="
@@ -79,7 +89,9 @@
 			<a class="mainpage" href="/">Profdex</a>
 			<span class="navbar-buttons">
 				<a class="menu" href="/editprofile">About Me</a>
+				{{#if (and (ne userType 'professor') (ne userType 'manager'))}}
 				<a class="menu" href="/createpost">Create Review</a>
+				{{/if}}
 				<a class="menu" href="/help">Help</a>
 			</span>
 			<span class="search-buttons">

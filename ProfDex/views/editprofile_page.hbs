@@ -1,30 +1,59 @@
 <html>
 <head>
-    <link rel="stylesheet" href="editprofile_page.css">
-    <link rel="stylesheet" href="navbar.css">
+	<link rel="stylesheet" href="editprofile_page.css">
+	<link rel="stylesheet" href="navbar.css">
 </head>
 
 <body>
-    <div class="homepage-container">                    <!--red-->
-        <div class="editprofile-container">             <!--blue-->
-            <div class="top-part-container">
-                <div class="profile-picture">               <!--yellow-->
-                    <div class="user-dp" id="image-input"></div>             <!--orange-->
-                </div>
-                
+	<div class="homepage-container">                    <!--red-->
+		<div class="editprofile-container">             <!--blue-->
+			<div class="top-part-container">
+				<div class="profile-picture">               <!--yellow-->
+					<div class="user-dp" id="image-input"></div>             <!--orange-->
+				</div>
+				
 				<form action="/editprofile" method="post">
 					<div class="user-info-container">           <!--purple-->
 						<div class="user-info">                 <!--cyan-->
+							{{#if errors.validation_error}}
+								<div class="error-message">Please fill all required fields with valid information.</div>
+							{{/if}}
+							{{#if errors.success}}
+								<div class="success-message">Profile updated successfully!</div>
+							{{/if}}
 							<div class="firstrow"> <!--beige-->
-								<input type="text" class="edit-user" name="username" placeholder="Username" value="{{ userData.aUser.username }}" readonly="readonly" required>
-								<input type="text" class="edit-user-input" name="email" placeholder="Email" value="{{ userData.aUser.email }}" required>
+								<input type="text" class="edit-user-input" name="firstName" placeholder="First Name" value="{{ userData.firstName }}" required>
+								<input type="text" class="edit-user-input" name="lastName" placeholder="Last Name" value="{{ userData.lastName }}" required>
 							</div>
 							<div class="firstrow"> <!--beige-->
-								<input type="text" class="edit-user-input" name="idno" placeholder="ID Number" value="{{ userData.aUser.idbatch }}" required>
-								<input type="text" class="edit-user-input" name="major" placeholder="Major" value="{{ userData.aUser.course }}" required>
+								<input type="text" class="edit-user-input" name="email" placeholder="Email" value="{{ userData.email }}" required>
+								{{#if studentData}}
+									<input type="text" class="edit-user-input" name="studentID" placeholder="Student ID" value="{{ studentData.studentID }}" required>
+								{{/if}}
 							</div>
+							{{#if studentData}}
+							<div class="firstrow"> <!--beige-->
+								<select class="edit-user-input" name="course" required>
+									<option value="">Select a Course</option>
+									{{#each courses}}
+										<option value="{{_id}}" {{#if (eq _id ../studentData.course._id)}}selected{{/if}}>{{name}} ({{code}})</option>
+									{{/each}}
+								</select>
+							</div>
+							{{/if}}
+							
+							{{#if subjects}}
+							<div class="firstrow"> <!--beige-->
+								<select class="edit-user-input" name="subjects" multiple>
+									{{#each subjects}}
+										<option value="{{_id}}">{{name}} ({{code}})</option>
+									{{/each}}
+								</select>
+								<small style="color: #666; font-size: 12px;">Hold Ctrl (or Cmd on Mac) to select multiple subjects</small>
+							</div>
+							{{/if}}
 							<div class="secondrow">
-								<input type="text" class="edit-bio-input" name="user_bio" placeholder="Bio" value="{{ userData.aUser.bio }}" required>
+								<input type="text" class="edit-bio-input" name="bio" placeholder="Bio" value="{{ studentData.bio }}">
 							</div> 
 							<div class="save-changes-container">
 								<button id="submit" type="submit" class="save-changes-button">Save Changes</button>
@@ -32,17 +61,23 @@
 						</div>
 					</div>
 				</form>
-            </div>
+			</div>
 
 			<div class="user-post-history-container">
 				Some of my posts:
 			</div>
 
-            {{#each postData}}
+			{{#each postData}}
 				<div class="review-container">
 					<div class="review-upper">
 						<a class="prof-name" href="/viewprof?id={{to}}">{{toname}}</a>
 						<div class="course-taken">{{course}}</div>
+						<a href="/viewreview?id={{_id}}" class="view-review-btn">View</a>
+						<a href="/editreview?reviewId={{_id}}" class="edit-review-btn">Edit</a>
+						<form action="/deletereview" method="post" style="display: inline;">
+							<input type="hidden" name="reviewId" value="{{_id}}">
+							<button type="submit" class="delete-review-btn" onclick="return confirm('Are you sure you want to delete this review?')">Delete</button>
+						</form>
 					</div>
 					<div class="review-lower">
 						<p class="review-text">{{aPost.text}}</p>
@@ -50,27 +85,29 @@
 				</div>
 			{{/each}}
  
-    </div>
+	</div>
 	
 	<div id="navbar">
-        <a class="mainpage" href="/">Profdex</a>
-        <span class="navbar-buttons">
-            <a class="menu" href="/editprofile">About Me</a>
+		<a class="mainpage" href="/">Profdex</a>
+		<span class="navbar-buttons">
+			<a class="menu" href="/editprofile">About Me</a>
+			{{#if (and (ne userType 'professor') (ne userType 'manager'))}}
 			<a class="menu" href="/createpost">Create Review</a>
+			{{/if}}
 			<a class="menu" href="/help">Help</a>
-        </span>
-        <span class="search-buttons">
+		</span>
+		<span class="search-buttons">
 			{{#if loggedInUser}}
 				<a class="login-button" href="/logout">Logout</a>
 			{{else}}
 				<a class="login-button" href="/login">Login</a>
 			{{/if}}
-            <form action="/viewprof" method="post">
+			<form action="/viewprof" method="post">
 				<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
 				<button type="submit" id="searchbutton"></button>
 			</form>
-        </span>
-    </div>
+		</span>
+	</div>
 
 </body>
 </html>

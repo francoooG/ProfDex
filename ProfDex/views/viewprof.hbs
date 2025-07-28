@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <link rel="stylesheet" href="viewprof.css">
-        <link rel="stylesheet" href="navbar.css">
-    </head>
+	<head>
+		<link rel="stylesheet" href="viewprof.css">
+		<link rel="stylesheet" href="navbar.css">
+	</head>
 
-    <body>
+	<body>
 			{{#with professorData}}
 			<div class="container">
 
@@ -18,17 +18,21 @@
 						<div class="right-side-bio">
 							<div class="row1">
 								<div class="bio-username">
-									<h2>Username</h2>
-									<span class="profname">{{aProfessor.title}} {{aProfessor.lastname}}</span>
+									<h2>Name</h2>
+									<span class="profname">{{userId.firstName}} {{userId.lastName}}</span>
 								</div>
 							</div>
 							<div class="starting-term">
-								<h2>Starting Term</h2>
-								<span class="startterm">{{aProfessor.sterm}}</span>
+								<h2>Teacher ID</h2>
+								<span class="startterm">{{teacherID}}</span>
 							</div>
 							<div class="bio-text">
 								<h2>Bio</h2>
-								<p class="bio">{{aProfessor.bio}}</p>
+								<p class="bio">{{bio}}</p>
+							</div>
+							<div class="subjects">
+								<h2>Subjects</h2>
+								<p class="subjects-list">{{#each subjects}}{{name}}{{#unless @last}}, {{/unless}}{{/each}}</p>
 							</div>
 						</div>
 					</div>
@@ -56,7 +60,9 @@
 				<a class="mainpage" href="/">Profdex</a>
 				<span class="navbar-buttons">
 					<a class="menu" href="/editprofile">About Me</a>
+					{{#if (and (ne userType 'professor') (ne userType 'manager'))}}
 					<a class="menu" href="/createpost">Create Review</a>
+					{{/if}}
 					<a class="menu" href="/help">Help</a>
 				</span>
 				<span class="search-buttons">

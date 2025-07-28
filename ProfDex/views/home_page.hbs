@@ -17,38 +17,40 @@
         <div class="professor-thumbnail-container">
             <div class="professor-thumbnail">
                 <div class="professor-links">
-				    {{#each data}}
-						<a class="profDP" href='/reviewlist?id={{_id}}' style="background-image: url(images/teacher.jpg);">
-							<div class="hiddenDate" style="display:none;">1</div>
-							<div class="profTitle">{{aProfessor.title}}</div>
-							<div class="profName">{{aProfessor.lastname}}</div>
-							<div class="profCourse">{{aProfessor.coursename}}</div>
-						</a>	
-					{{/each}}
+                    {{#each data}}
+                        <a class="profDP" href='/reviewlist?id={{_id}}' style="background-image: url(images/teacher.jpg);">
+                            <div class="hiddenDate" style="display:none;">1</div>
+                            <div class="profTitle">Dr.</div>
+                            <div class="profName">{{userId.lastName}}</div>
+                            <div class="profCourse">{{subjects.[0].name}}</div>
+                        </a>	
+                    {{/each}}
                 </div>
             </div>
         </div>
 
-		<div id="navbar">
-			<a class="mainpage" href="/">Profdex</a>
-			<span class="navbar-buttons">
-				<a class="menu" href="/editprofile">About Me</a>
-				<a class="menu" href="/createpost">Create Review</a>
+        <div id="navbar">
+            <a class="mainpage" href="/">Profdex</a>
+            <span class="navbar-buttons">
+                <a class="menu" href="/editprofile">About Me</a>
+            {{#if (and (ne userType 'professor') (ne userType 'manager'))}}
+            <a class="menu" href="/createpost">Create Review</a>
+            {{/if}}
                 <a class="menu" href="/help">Help</a>
-			</span>
-			<span class="search-buttons">
-				{{#if loggedInUser}}
-					<a class="login-button" href="/logout">Logout</a>
-				{{else}}
-					<a class="login-button" href="/login">Login</a>
-				{{/if}}
-				<form action="/viewprof" method="post">
-					<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
-					<button type="submit" id="searchbutton"></button>
-				</form>
-			</span>
-		</div>
-	</div>
+            </span>
+            <span class="search-buttons">
+                {{#if loggedInUser}}
+                    <a class="login-button" href="/logout">Logout</a>
+                {{else}}
+                    <a class="login-button" href="/login">Login</a>
+                {{/if}}
+                <form action="/viewprof" method="post">
+                    <input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+                    <button type="submit" id="searchbutton"></button>
+                </form>
+            </span>
+        </div>
+    </div>
 
     <script>
         const professorThumbnailContainer = document.querySelector('.professor-thumbnail-container');
@@ -101,8 +103,8 @@
                 professorLinks.appendChild(element);
             });
         }
-		
-		
+        
+        
     </script>
 
 

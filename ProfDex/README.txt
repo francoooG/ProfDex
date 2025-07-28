@@ -1,9 +1,13 @@
-Step 1: Connect to to the mongodb database, with mongod in the command line.
+Step 1: Clone the repo
 
-Step 2: Open up mongodb compass and import the provided JSON files to their appropriate collections, the names of the JSON files should aid in assigning the file to the collection. First import the connection using the Profdex.json to setup such, then import each json file for the data respective to the collections.
+Step 2: Start your mongodb compass
 
-Step 3: Unzip the ProfDex zip file and assign the directory to it. 
+Step 3: Make a new connection
 
-Step 4: Run the program through npm start and go to http://localhost:3000/ in your browser to view and navigate through the webpage.
+Step 4: Copy the .env connection url to the mongodb setup thing
 
-Note: For navigation of the web application, after the proper setup of the database, please refer to the attached video for reference.
+Step 5: Connect
+
+Step 6: Type "npm start" in the terminal
+
+Step 7: type localhost in your browser 

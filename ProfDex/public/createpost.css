@@ -61,6 +61,10 @@ h1 {
     font-weight: bold;
 }
 
+.inputbox:focus {
+    outline: solid 2px rgb(26, 104, 65);
+}
+
 .slidersbox {
     flex: 2;
     display: grid;

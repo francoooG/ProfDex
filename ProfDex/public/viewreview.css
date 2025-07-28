@@ -1,3 +1,6 @@
+.add-comment-container {
+    margin-left: 100px;
+}
 body {
     position: fixed;
     height:100%;
@@ -11,7 +14,7 @@ body {
     z-index:1;
     overflow: hidden;
     background-image: url('images/ReviewBackground.png'); 
-	border-radius: 5px;
+    border-radius: 5px;
     border-bottom: 2px solid #8c8c8c;
     width: 260px;
     height: 260px; 
@@ -23,7 +26,7 @@ body {
     z-index:1;
     overflow: hidden;
     background-image: url('images/ReviewHeaderBackground.png'); 
-	border-radius: 5px;
+    border-radius: 5px;
     border-bottom: 2px solid #8c8c8c;
     width: 270px;
     height: 25px; 
@@ -31,9 +34,9 @@ body {
 
 .bar{
     position: absolute;
-	transform-origin: bottom;
+    transform-origin: bottom;
     transform: scaleY(2);
-	background-color: green;
+    background-color: green;
 }
 
 #proficiency {
@@ -48,7 +51,7 @@ body {
     width: 31px;
     height: 26px;
     background: url(images/AttributesSprites.png) 0 0;
-	background-position: -44px 0px;
+    background-position: -44px 0px;
 }
 
 #engagement {
@@ -56,7 +59,7 @@ body {
     width: 31px;
     height: 26px;
     background: url(images/AttributesSprites.png) 0 0;
-	background-position: -87px 0px;
+    background-position: -87px 0px;
 }
 
 #workload {
@@ -64,7 +67,7 @@ body {
     width: 31px;
     height: 26px;
     background: url(images/AttributesSprites.png) 0 0;
-	background-position: -132px 0px;
+    background-position: -132px 0px;
 }
 
 #difficulty {
@@ -72,7 +75,7 @@ body {
     width: 31px;
     height: 26px;
     background: url(images/AttributesSprites.png) 0 0;
-	background-position: -169px 0px;
+    background-position: -169px 0px;
 }
 
 #upvote {
@@ -80,7 +83,7 @@ body {
     width: 31px;
     height: 26px;
     background: url(images/FilterSprites.png) 0 0;
-	background-position: 0px 0px;
+    background-position: 0px 0px;
 }
 
 #upvote:hover {
@@ -88,7 +91,7 @@ body {
     width: 31px;
     height: 26px;
     background: url(images/FilterSprites.png) 0 0;
-	background-position: -45px 0px;
+    background-position: -45px 0px;
 }
 
 #downvote {
@@ -96,7 +99,7 @@ body {
     width: 31px;
     height: 26px;
     background: url(images/FilterSprites.png) 0 0;
-	background-position: -90px 0px;
+    background-position: -90px 0px;
 }
 
 #downvote:hover {
@@ -104,14 +107,14 @@ body {
     width: 31px;
     height: 26px;
     background: url(images/FilterSprites.png) 0 0;
-	background-position: -135px 0px;
+    background-position: -135px 0px;
 }
 
 .review-container {
     position: relative;
     display:inline-flex;
     margin-top: 130px;
-	margin-left: 100px;
+    margin-left: 100px;
     align-items: flex-start;
     width: 100%;
     height: 100%;
@@ -126,20 +129,20 @@ body {
 }
 
 #professorname {
-	text-decoration: none;
+    text-decoration: none;
     font-family: 'proxima_nova_rgbold';
-	font-size: 25px;
-	color: #e65c00;
+    font-size: 25px;
+    color: #e65c00;
 }
 
 #filter {
     position: absolute;
-	display:inline-flex;
+    display:inline-flex;
     width: 100%;
     height: 60px;
-	background-image: url('images/ReviewFilterBackground.png'); 
-	margin-top: 50px;
-	border-bottom: 2px solid #666666;
+    background-image: url('images/ReviewFilterBackground.png'); 
+    margin-top: 50px;
+    border-bottom: 2px solid #666666;
 }
 
 a.filter {
@@ -147,7 +150,7 @@ a.filter {
     text-decoration: none;
     font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
     font-size: 1rem;
-	color: #595959;
+    color: #595959;
 }
 
 a.page {
@@ -155,7 +158,7 @@ a.page {
     text-decoration: none;
     font-family: 'proxima_nova_rgbold';
     font-size: 1rem;
-	color: #595959;
+    color: #595959;
 }
 
 #text {
@@ -166,8 +169,8 @@ a.page {
     z-index:1;
     overflow: hidden;
     background-image: url('images/TextBackground.png'); 
-	margin-left: 300px;
-	border-radius: 5px;
+    margin-left: 300px;
+    border-radius: 5px;
     border-bottom: 3px solid #999999;
     width: 975px;
     height: 260px;
@@ -177,7 +180,7 @@ a.text {
     font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
     color: #595959;
     margin-left: 10;
-	margin-top: 10;
+    margin-top: 10;
 }
 
 #comment {
@@ -185,9 +188,9 @@ a.text {
     z-index:1;
     overflow: hidden;
     background-image: url('images/TextBackground.png'); 
-	margin-left: -1000px;
-	margin-top: 290px;
-	border-radius: 5px;
+    margin-left: -1000px;
+    margin-top: 290px;
+    border-radius: 5px;
     border: 2px solid #999999;
     resize: vertical;
     width: 1275px;
@@ -195,13 +198,13 @@ a.text {
 }
 
 #submit {
-	position: absolute; 
-	margin-left: -100px; 
-	margin-top: 560px; 
-	width:100px; 
-	height:30px; 
-	border-radius: 5px; 
-	border: 2px solid #999999;
+    position: absolute; 
+    margin-left: -100px; 
+    margin-top: 560px; 
+    width:100px; 
+    height:30px; 
+    border-radius: 5px; 
+    border: 2px solid #999999;
 }
 
 a.submit {
@@ -228,18 +231,32 @@ a.submit:hover {
 }
 
 a.comment {
-	position: absolute;
-	text-decoration: none;
-	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
-	font-size: 1rem;
-	color: white;
-	margin-top: 567px;
-	margin-left: 1050px;
+    position: absolute;
+    text-decoration: none;
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+    font-size: 1rem;
+    color: white;
+    margin-top: 567px;
+    margin-left: 1050px;
 }
 
 a.review-author {
-	margin-top: 5px;
-	margin-left: 5px;
-	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
-	color: #595959;
+    margin-top: 5px;
+    margin-left: 5px;
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+    color: #595959;
+}
+
+html, body {
+  height: 100%;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+body {
+  width: 100vw;
+  box-sizing: border-box;
+}
+#app, #root {
+  height: 100%;
 }

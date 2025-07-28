@@ -7,57 +7,213 @@
 <body>
     <div class="homepage-container">
         <div class="login-container">
-
-
             <div class="login-input-container">
-				<h1>Already registered?</h1>
-				<form action="/login" method="POST">
-					<input type="text" class="username" name="username" placeholder="Username" required><br>
-					<input type="password" class="password" name="password" placeholder="Password" required>
-					<br><br><b>[CASE SENSITIVE]</b>
-					<button type="submit" class="userlogon">Login</button>
-				</form>
-				{{#if errors.password_mismatch}}
-					<b class="password-error">Passwords do not match.</b>
-				{{/if}}
-				{{#if errors.invalid_credentials}}
-					<b class="credentials-error">Credentials are incorrect.</b>
-				{{/if}}
-			</div>
+                <h1>Already registered?</h1>
+                <form action="/login" method="POST">
+                    <input type="email" class="username" name="email" placeholder="Email" required><br>
+                    <input type="password" class="password" name="password" placeholder="Password" required>
+                    <br><br><b>[CASE SENSITIVE]</b>
+                    <button type="submit" class="userlogon">Login</button>
+                </form>
+                {{#if errors.password_mismatch}}
+                    <b class="password-error">Passwords do not match.</b>
+                {{/if}}
+                {{#if errors.invalid_credentials}}
+                    <b class="credentials-error">Credentials are incorrect.</b>
+                {{/if}}
+                {{#if errors.registration_error}}
+                    <b class="credentials-error">Registration failed. Please check your information.</b>
+                {{/if}}
+            </div>
         </div>
 
         <div class="register-container">
             <div class="register-header">New User? Join the talks...</div>
             <div class="register-input-container">
-                <form action="/login" method="POST">
-                    <input type="text" class="registerinput" name="registerusername" placeholder="Username" required><br>
-                    <input type="password" class="registerinput" name="registerpassword" placeholder="Password" required><br>
-                    <input type="password" class="registerinput" name="confirmpassword" placeholder="Confirm Password" required><br>
-                    <input type="text" class="registerinput" name="major" placeholder="Major" required><br>
-                    <input type="text" class="registerinput" name="batchno" placeholder="Batch Number" required><br>
-                    <input type="text" class="registerinput" name="email" placeholder="Email" required><br>
-                    <div class="register-button">
-                        <button type="submit" class="userregister">Register</button>
+                <form action="/login" method="POST" id="registerForm">
+                    <input type="text" class="registerinput" name="registerFirstName" placeholder="First Name" required><br>
+                    <input type="text" class="registerinput" name="registerLastName" placeholder="Last Name" required><br>
+                    <input type="email" class="registerinput" name="registerEmail" placeholder="Email" required><br>
+                    <input type="password" class="registerinput" name="registerPassword" placeholder="Password" required><br>
+                    <input type="password" class="registerinput" name="confirmPassword" placeholder="Confirm Password" required><br>
+                    
+                    <select class="registerinput" name="userType" id="userType" required>
+                        <option value="">Select User Type</option>
+                        <option value="student">Student</option>
+                        <option value="professor">Professor</option>
+                        <option value="manager">Manager</option>
+                    </select><br>
+                    
+                    <!-- Student fields -->
+                    <div id="studentFields" style="display: none;">
+                        <input type="text" class="registerinput" name="studentID" placeholder="Student ID"><br>
+                        <select class="registerinput" name="course" required>
+                            <option value="">Select a Course</option>
+                            {{#each courses}}
+                                <option value="{{_id}}">{{name}} ({{code}})</option>
+                            {{/each}}
+                        </select><br>
+                    </div>
+                    
+                    <!-- Professor fields -->
+                    <div id="professorFields" style="display: none;">
+                        <input type="text" class="registerinput" name="teacherID" placeholder="Teacher ID" required><br>
+                        <div class="subject-selector">
+                            <label for="subjects">Subjects (optional):</label><br>
+                            <div class="subjects-checklist">
+                                {{#each subjects}}
+                                    <label class="subject-checkbox">
+                                        <input type="checkbox" name="subjects" value="{{_id}}" data-name="{{name}}">
+                                        <span class="checkmark"></span>
+                                        {{name}} ({{code}})
+                                    </label>
+                                {{/each}}
+                            </div>
+                        </div>
                     </div>
                 </form>
+                
+                <div class="register-button">
+                    <button type="submit" form="registerForm" class="userregister">Register</button>
+                </div>
             </div>
         </div>
     </div>
 
-	<div id="navbar">
+    <div id="navbar">
         <a class="mainpage" href="/">Profdex</a>
         <span class="navbar-buttons">
             <a class="menu" href="/editprofile">About Me</a>
-			<a class="menu" href="/createpost">Create Review</a>
+            {{#unless (eq userType 'professor')}}
+            <a class="menu" href="/createpost">Create Review</a>
+            {{/unless}}
             <a class="menu" href="/help">Help</a>
         </span>
         <span class="search-buttons">
             <form action="/viewprof" method="post">
-				<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
-				<button type="submit" id="searchbutton"></button>
-			</form>
+                <input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+                <button type="submit" id="searchbutton"></button>
+            </form>
         </span>
     </div>
+
+    <script>
+        let selectedSubjects = [];
+
+        function checkFormValidity() {
+            const userType = document.getElementById('userType').value;
+            const registerButton = document.querySelector('.userregister');
+            let isValid = true;
+            let errorMessage = '';
+
+            const firstName = document.querySelector('input[name="registerFirstName"]').value.trim();
+            const lastName = document.querySelector('input[name="registerLastName"]').value.trim();
+            const email = document.querySelector('input[name="registerEmail"]').value.trim();
+            const password = document.querySelector('input[name="registerPassword"]').value;
+            const confirmPassword = document.querySelector('input[name="confirmPassword"]').value;
+
+            if (!firstName || !lastName || !email || !password || !confirmPassword || !userType) {
+                isValid = false;
+                errorMessage = 'Please fill all required fields';
+            } else if (password !== confirmPassword) {
+                isValid = false;
+                errorMessage = 'Passwords do not match';
+            } else if (userType === 'student') {
+                const studentID = document.querySelector('input[name="studentID"]').value.trim();
+                const course = document.querySelector('select[name="course"]').value;
+                
+                if (!studentID || !course) {
+                    isValid = false;
+                    errorMessage = 'Please fill student ID and select a course';
+                }
+            } else if (userType === 'professor') {
+                const teacherID = document.querySelector('input[name="teacherID"]').value.trim();
+                
+                if (!teacherID) {
+                    isValid = false;
+                    errorMessage = 'Please fill teacher ID';
+                }
+            }
+
+            if (isValid) {
+                registerButton.classList.remove('disabled');
+                registerButton.title = 'Click to register';
+            } else {
+                registerButton.classList.add('disabled');
+                registerButton.title = errorMessage;
+            }
+            
+            console.log('Form validity check:', { isValid, userType, errorMessage });
+
+            return isValid;
+        }
+
+        function addFormValidationListeners() {
+            const formFields = document.querySelectorAll('#registerForm input, #registerForm select');
+            formFields.forEach(field => {
+                field.addEventListener('input', checkFormValidity);
+                field.addEventListener('change', checkFormValidity);
+            });
+            
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', checkFormValidity);
+            });
+        }
+
+        document.getElementById('userType').addEventListener('change', function() {
+            const userType = this.value;
+            const studentFields = document.getElementById('studentFields');
+            const professorFields = document.getElementById('professorFields');
+            const courseSelect = document.querySelector('select[name="course"]');
+            const teacherIDInput = document.querySelector('input[name="teacherID"]');
+
+            studentFields.style.display = 'none';
+            professorFields.style.display = 'none';
+
+            if (courseSelect) courseSelect.required = false;
+            if (teacherIDInput) teacherIDInput.required = false;
+
+            if (userType === 'student') {
+                studentFields.style.display = 'block';
+                if (courseSelect) courseSelect.required = true;
+                if (teacherIDInput) teacherIDInput.required = false;
+            } else if (userType === 'professor') {
+                professorFields.style.display = 'block';
+                if (teacherIDInput) teacherIDInput.required = true;
+            }
+
+            setTimeout(checkFormValidity, 100);
+        });
+
+
+
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const userType = document.getElementById('userType').value;
+            const formData = {
+                firstName: document.querySelector('input[name="registerFirstName"]').value.trim(),
+                lastName: document.querySelector('input[name="registerLastName"]').value.trim(),
+                email: document.querySelector('input[name="registerEmail"]').value.trim(),
+                password: document.querySelector('input[name="registerPassword"]').value,
+                confirmPassword: document.querySelector('input[name="confirmPassword"]').value,
+                userType: userType
+            };
+            if (userType === 'student') {
+                formData.studentID = document.querySelector('input[name="studentID"]').value.trim();
+                formData.course = document.querySelector('select[name="course"]').value;
+            } else if (userType === 'professor') {
+                formData.teacherID = document.querySelector('input[name="teacherID"]').value.trim();
+                const checkedSubjects = document.querySelectorAll('input[name="subjects"]:checked');
+                formData.subjects = Array.from(checkedSubjects).map(cb => ({ id: cb.value, name: cb.getAttribute('data-name') }));
+            }
+            console.log('Register form data:', formData);
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            addFormValidationListeners();
+            checkFormValidity();
+        });
+    </script>
 
 </body>
 </html>

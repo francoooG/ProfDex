@@ -182,3 +182,77 @@ a.save-changes-button {
     padding-left: 10px;
     padding-right: 10px;
 }
+
+.delete-review-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-left: auto;
+    margin-right: 10px;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.delete-review-btn:hover {
+    background-color: #c82333;
+}
+
+.edit-review-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-left: auto;
+    margin-right: 10px;
+    margin-top: auto;
+    margin-bottom: auto;
+    text-decoration: none;
+}
+
+.edit-review-btn:hover {
+    background-color: #0056b3;
+}
+
+.view-review-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-left: auto;
+    margin-right: 10px;
+    margin-top: auto;
+    margin-bottom: auto;
+    text-decoration: none;
+}
+
+.view-review-btn:hover {
+    background-color: #218838;
+}
+
+.error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    border: 1px solid #f5c6cb;
+}
+
+.success-message {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    border: 1px solid #c3e6cb;
+}

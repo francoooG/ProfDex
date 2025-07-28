@@ -9,7 +9,9 @@
         <a class="mainpage" href="/">Profdex</a>
         <span class="navbar-buttons">
             <a class="menu" href="/editprofile">About Me</a>
-			<a class="menu" href="/createpost">Create Review</a>
+            {{#if (and (ne userType 'professor') (ne userType 'manager'))}}
+            <a class="menu" href="/createpost">Create Review</a>
+            {{/if}}
         </span>
         <span class="search-buttons">
             <a class="login-button" href="/login">Login</a>

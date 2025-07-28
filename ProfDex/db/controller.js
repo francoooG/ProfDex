@@ -4,202 +4,559 @@ require('dotenv').config();
 
 var Schema = mongoose.Schema;
 
-//Professors
-var profSchema = new Schema({
-	aProfessor : {
-		type: Object,
-		"firstName":  String,
-		"lastName": String,
-		"title":  String,
-		"course":  String,
-		"sterm": String,
-		"bio": String
-	}
+var userSchema = new Schema({
+    firstName: {
+        type: String,
+        required: true
+    },
+    lastName: {
+        type: String,
+        required: true
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    password: {
+        type: String,
+        required: true
+    },
+    userType: {
+        type: String,
+        enum: ['student', 'professor', 'manager'],
+        required: true
+    }
 });
-var prof = mongoose.model("Profs", profSchema);
+var User = mongoose.model("Users", userSchema);
+
+var studentSchema = new Schema({
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Users',
+        required: true
+    },
+    studentID: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    bio: {
+        type: String,
+        default: ''
+    },
+    course: {
+        type: Schema.Types.ObjectId,
+        ref: 'Courses',
+        required: true
+    }
+});
+var Student = mongoose.model("Students", studentSchema);
+
+var professorSchema = new Schema({
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Users',
+        required: true
+    },
+    teacherID: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    bio: {
+        type: String,
+        default: ''
+    },
+    subjects: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Subjects'
+    }]
+});
+var Professor = mongoose.model("Professors", professorSchema);
+
+var courseSchema = new Schema({
+    name: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    code: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    description: {
+        type: String,
+        default: ''
+    }
+});
+var Course = mongoose.model("Courses", courseSchema);
+
+var subjectSchema = new Schema({
+    name: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    code: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    description: {
+        type: String,
+        default: ''
+    }
+});
+var Subject = mongoose.model("Subjects", subjectSchema);
+
+var managerSchema = new Schema({
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Users',
+        required: true
+    }
+});
+var Manager = mongoose.model("Managers", managerSchema);
+
+var postSchema = new Schema({
+    aPost: {
+        type: Object,
+        text: String
+    },
+    op: String,
+    to: String,
+    course: String,
+    opname: String,
+    toname: String,
+    difficulty: Number,
+    engagement: Number,
+    generosity: Number,
+    proficiency: Number,
+    workload: Number
+});
+var Post = mongoose.model("Posts", postSchema);
+
+var commentSchema = new Schema({
+    aComment: {
+        type: Object,
+        text: String
+    },
+    op: String,
+    to: String,
+    post: String,
+    opname: String,
+    toname: String,
+    date: Date
+});
+var Comment = mongoose.model("Comments", commentSchema);
+
+async function getUserData(id) {
+    try {
+        const user = await User.findById(id).lean();
+        return user;
+    } 
+    catch (error) {
+        console.error('Error finding user: ', error);
+        return null;
+    }
+}
+
+async function getUserByEmail(email) {
+    try {
+        const user = await User.findOne({ email: email }).lean();
+        return user;
+    } 
+    catch (error) {
+        console.error('Error finding user by email: ', error);
+        return null;
+    }
+}
+
+async function getAllCourses() {
+    try {
+        const courses = await Course.find().lean();
+        return courses;
+    } 
+    catch (error) {
+        console.error('Error finding courses: ', error);
+        return null;
+    }
+}
+
+async function getCourseById(id) {
+    try {
+        const course = await Course.findById(id).lean();
+        return course;
+    } 
+    catch (error) {
+        console.error('Error finding course: ', error);
+        return null;
+    }
+}
+
+async function createCourse(name, code, description = '') {
+    try {
+        const course = new Course({
+            name: name,
+            code: code,
+            description: description
+        });
+        await course.save();
+        return course;
+    } 
+    catch (error) {
+        console.error('Error creating course: ', error);
+        return null;
+    }
+}
+
+async function getAllSubjects() {
+    try {
+        const subjects = await Subject.find().lean();
+        return subjects;
+    } 
+    catch (error) {
+        console.error('Error finding subjects: ', error);
+        return null;
+    }
+}
+
+async function getSubjectById(id) {
+    try {
+        const subject = await Subject.findById(id).lean();
+        return subject;
+    } 
+    catch (error) {
+        console.error('Error finding subject: ', error);
+        return null;
+    }
+}
+
+async function createSubject(name, code, description = '') {
+    try {
+        const subject = new Subject({
+            name: name,
+            code: code,
+            description: description
+        });
+        await subject.save();
+        return subject;
+    } 
+    catch (error) {
+        console.error('Error creating subject: ', error);
+        return null;
+    }
+}
+
+async function getStudentData(userId) {
+    try {
+        const student = await Student.findOne({ userId: userId }).populate('userId').populate('course').lean();
+        return student;
+    } 
+    catch (error) {
+        console.error('Error finding student: ', error);
+        return null;
+    }
+}
+
+async function createStudent(userId, studentID, courseId, bio = '') {
+    try {
+        const student = new Student({
+            userId: userId,
+            studentID: studentID,
+            course: courseId,
+            bio: bio
+        });
+        await student.save();
+        return student;
+    } 
+    catch (error) {
+        console.error('Error creating student: ', error);
+        return null;
+    }
+}
 
 async function getProfessorData(id) {
     try {
-        const professor = await prof.findById(id).lean();
+        const professor = await Professor.findById(id).populate('userId').populate('subjects').lean();
         return professor;
     } 
-	catch (error) {
-        console.error('Error finding data: ', error);
+    catch (error) {
+        console.error('Error finding professor: ', error);
         return null;
     }
 }
 
 async function getAllProfessorData() {
     try {
-        const professor = await prof.find().lean();
+        const professors = await Professor.find().populate('userId').populate('subjects').lean();
+        return professors;
+    } 
+    catch (error) {
+        console.error('Error finding all professors: ', error);
+        return null;
+    }
+}
+
+async function getProfessorByUserId(userId) {
+    try {
+        const professor = await Professor.findOne({ userId: userId }).populate('userId').populate('subjects').lean();
         return professor;
     } 
-	catch (error) {
-        console.error('Error finding data: ', error);
+    catch (error) {
+        console.error('Error finding professor by user ID: ', error);
         return null;
     }
 }
 
-async function getProfessorDataFromName(firstname, lastname) {
+async function createProfessor(userId, teacherID, subjectIds = [], bio = '') {
     try {
-        const professor = await prof.findOne({ "aProfessor.firstname": firstname, "aProfessor.lastname": lastname }).lean();
+        const professor = new Professor({
+            userId: userId,
+            teacherID: teacherID,
+            subjects: subjectIds,
+            bio: bio
+        });
+        await professor.save();
         return professor;
     } 
-	catch (error) {
-        console.error('Error finding data: ', error);
+    catch (error) {
+        console.error('Error creating professor: ', error);
         return null;
     }
 }
 
-//Users
-var userSchema = new Schema({
-    aUser : {
-		"type": Object,
-		"username": String,
-		"course": String,
-		"idbatch": String,
-		"bio": String,
-		"password": String,
-		"email": String
-	}
-});
-var user = mongoose.model("Users", userSchema);
-
-async function getUserData(id) {
+async function getManagerData(userId) {
     try {
-        const student = await user.findById(id).lean();
-        return student;
+        const manager = await Manager.findOne({ userId: userId }).populate('userId').lean();
+        return manager;
     } 
-	catch (error) {
-        console.error('Error finding data: ', error);
+    catch (error) {
+        console.error('Error finding manager: ', error);
         return null;
     }
 }
 
-//Posts
-var postSchema = new Schema({
-    aPost : {
-		type : Object,
-		"text": String,
-	},
-	"op": String,
-	"to": String,
-	"course": String,
-	"opname": String,
-	"toname": String,
-	"difficulty": Number,
-    "engagement": Number,
-    "generosity": Number,
-    "proficiency": Number,
-    "workload": Number
-});
-var post = mongoose.model("Posts", postSchema);
+async function createManager(userId) {
+    try {
+        const manager = new Manager({
+            userId: userId
+        });
+        await manager.save();
+        return manager;
+    } 
+    catch (error) {
+        console.error('Error creating manager: ', error);
+        return null;
+    }
+}
 
 async function getProfPostData(id) {
     try {
-        const review = await post.find({to: id}).lean();
+        const review = await Post.find({to: id}).lean();
         return review;
     } 
-	catch (error) {
-        console.error('Error finding data: ', error);
+    catch (error) {
+        console.error('Error finding professor posts: ', error);
         return null;
     }
 }
 
 async function getUserPostData(id) {
     try {
-        const review = await post.find({op: id}).lean();
+        const review = await Post.find({op: id}).lean();
         return review;
     } 
-	catch (error) {
-        console.error('Error finding data: ', error);
+    catch (error) {
+        console.error('Error finding user posts: ', error);
         return null;
     }
 }
 
 async function getPostData(id) {
     try {
-        const review = await post.findById(id).lean();
+        const review = await Post.findById(id).lean();
         return review;
     } 
-	catch (error) {
-        console.error('Error finding data: ', error);
+    catch (error) {
+        console.error('Error finding post: ', error);
         return null;
     }
 }
 
-//Comments
-var commentSchema = new Schema({
-    aComment : {
-		type : Object,
-		"text": String,
-	},
-	"op": String,
-	"to": String,
-	"post": String,
-	"opname": String,
-	"toname": String,
-	"date" : Date
-});
-var comment = mongoose.model("Comments", commentSchema);
+async function deletePost(id) {
+    try {
+        const result = await Post.findByIdAndDelete(id);
+        return result;
+    } 
+    catch (error) {
+        console.error('Error deleting post: ', error);
+        return null;
+    }
+}
 
 async function getPostCommentData(id) {
     try {
-        const comm = await comment.find({post: id}).lean();
+        const comm = await Comment.find({post: id}).lean();
         return comm;
     } 
-	catch (error) {
-        console.error('Error finding data: ', error);
+    catch (error) {
+        console.error('Error finding post comments: ', error);
         return null;
     }
 }
 
 async function getCommentData(id) {
     try {
-        const comm = await comment.findById(id).lean();
+        const comm = await Comment.findById(id).lean();
         return comm;
     } 
-	catch (error) {
-        console.error('Error finding data: ', error);
+    catch (error) {
+        console.error('Error finding comment: ', error);
         return null;
     }
 }
 
-async function loginUser(username, password, req) {
+async function loginUser(email, password, req) {
     try {
-        const existingUser = await user.findOne({ 'aUser.username': {'$regex': `^${username}$`, $options: 'i'} }).lean();
+        const existingUser = await User.findOne({ email: email }).lean();
 
-        if (!existingUser || !(await bcrypt.compare(password, existingUser.aUser.password))) {
-            return null; // User not found
+        if (!existingUser) {
+            return null; 
         }
 
-        // Storing to session
+        const passwordMatch = await bcrypt.compare(password, existingUser.password);
+        if (!passwordMatch) {
+            return null;
+        }
+
+        let userData = { ...existingUser };
+        
+        if (existingUser.userType === 'student') {
+            const studentData = await getStudentData(existingUser._id);
+            if (studentData) {
+                userData.studentData = studentData;
+            }
+        } else if (existingUser.userType === 'professor') {
+            const professorData = await getProfessorByUserId(existingUser._id);
+            if (professorData) {
+                userData.professorData = professorData;
+            }
+        } else if (existingUser.userType === 'manager') {
+            const managerData = await getManagerData(existingUser._id);
+            if (managerData) {
+                userData.managerData = managerData;
+            }
+        }
+
         req.session.user = {
-            _id: existingUser._id.toString(), // Convert to string to be used in op attributes
-            username: existingUser.aUser.username
+            _id: existingUser._id.toString(),
+            email: existingUser.email,
+            firstName: existingUser.firstName,
+            lastName: existingUser.lastName,
+            userType: existingUser.userType
         };
 
-        return existingUser; // User found
+        return userData;
     } 
-	catch (error) {
-        console.error('Error finding user: ', error);
+    catch (error) {
+        console.error('Error during login: ', error);
         return null;
     }
 }
 
+async function registerUser(firstName, lastName, email, password, userType, additionalData) {
+    try {
+        const existingUser = await User.findOne({ email: email });
+        if (existingUser) {
+            return { success: false, error: 'User already exists' };
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 15);
+
+        const user = new User({
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            password: hashedPassword,
+            userType: userType
+        });
+        await user.save();
+
+        let specificUserData = null;
+        
+        if (userType === 'student') {
+            specificUserData = await createStudent(
+                user._id, 
+                additionalData.studentID, 
+                additionalData.courseId, 
+                additionalData.bio || ''
+            );
+        } else if (userType === 'professor') {
+            specificUserData = await createProfessor(
+                user._id, 
+                additionalData.teacherID, 
+                additionalData.subjectIds || [], 
+                additionalData.bio || ''
+            );
+        } else if (userType === 'manager') {
+            specificUserData = await createManager(user._id);
+        }
+
+        return { 
+            success: true, 
+            user: user, 
+            specificUserData: specificUserData 
+        };
+    } 
+    catch (error) {
+        console.error('Error during registration: ', error);
+        return { success: false, error: 'Registration failed' };
+    }
+}
 
 module.exports = {  
-	getProfessorData,
-	getProfessorDataFromName,
-	getAllProfessorData,
-	getUserData,
-	getUserPostData,
-	getPostData,
-	getProfPostData,
-	getPostCommentData,
-	getCommentData,
-	comment,
-	loginUser,
-	user,
-	post
+    getUserData,
+    getUserByEmail,
+    
+    getAllCourses,
+    getCourseById,
+    createCourse,
+    
+    getAllSubjects,
+    getSubjectById,
+    createSubject,
+    
+    getStudentData,
+    createStudent,
+    
+    getProfessorData,
+    getAllProfessorData,
+    getProfessorByUserId,
+    createProfessor,
+    
+    getManagerData,
+    createManager,
+    
+    getUserPostData,
+    getPostData,
+    getProfPostData,
+    deletePost,
+    
+    getPostCommentData,
+    getCommentData,
+    
+    loginUser,
+    registerUser,
+    
+    User,
+    Student,
+    Professor,
+    Manager,
+    Course,
+    Subject,
+    Post,
+    Comment
 }

@@ -1,32 +1,34 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Create a Post/Review</title>
-        <link rel="stylesheet" href="createpost.css">
-        <link rel="stylesheet" href="navbar.css">
-    </head>
-    <body>
+	<head>
+		<title>Create a Post/Review</title>
+		<link rel="stylesheet" href="createpost.css">
+		<link rel="stylesheet" href="navbar.css">
+	</head>
+	<body>
 
-        <div id="navbar">
-            <a class="mainpage" href="/">Profdex</a>
-            <span class="navbar-buttons">
-                <a class="menu" href="/editprofile">About Me</a>
+		<div id="navbar">
+			<a class="mainpage" href="/">Profdex</a>
+			<span class="navbar-buttons">
+				<a class="menu" href="/editprofile">About Me</a>
+				{{#if (and (ne userType 'professor') (ne userType 'manager'))}}
 				<a class="menu" href="/createpost">Create Review</a>
+				{{/if}}
 				<a class="menu" href="/help">Help</a>
-            </span>
-            <span class="search-buttons">
-                {{#if loggedInUser}}
+			</span>
+			<span class="search-buttons">
+				{{#if loggedInUser}}
 					<a class="login-button" href="/logout">Logout</a>
 				{{else}}
 					<a class="login-button" href="/login">Login</a>
 				{{/if}}
-                <form action="/viewprof" method="post">
+				<form action="/viewprof" method="post">
 					<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
 					<button type="submit" id="searchbutton"></button>
 				</form>
-            </span>
-        </div>
-        
+			</span>
+		</div>
+		
 		<form action="/createpost" method="post">
 			<div>
 				<div class="main1">
@@ -35,9 +37,13 @@
 						<span class="professorwho">Who's that Professor?</span>
 
 						<div class="textinputs">
-							<input type="text" placeholder="First Name" name="firstname" class="inputbox" required>
-							<input type="text" placeholder="Last Name" name="lastname" class="inputbox" required>
-							<input type="text" placeholder="Course" name="course" class="inputbox" required>
+							<select name="professorId" class="inputbox" id="professorSelect" required>
+								<option value="">Select a Professor</option>
+								{{#each professors}}
+									<option value="{{_id}}" data-course="{{subjects.[0].name}}">{{userId.firstName}} {{userId.lastName}} - {{subjects.[0].name}}</option>
+								{{/each}}
+							</select>
+							<input type="text" placeholder="Course" name="course" class="inputbox" id="courseInput" required>
 						</div>
 					</div>
 
@@ -70,5 +76,22 @@
 		{{#if errors.professor_error}}
 			<b class="professor-error">Professor not found.</b>
 		{{/if}}
-    </body>
+		{{#if errors.validation_error}}
+			<b class="professor-error">Please fill all fields and write a review with at least 10 characters.</b>
+		{{/if}}
+		
+		<script>
+			document.getElementById('professorSelect').addEventListener('change', function() {
+				const selectedOption = this.options[this.selectedIndex];
+				const courseInput = document.getElementById('courseInput');
+				
+				if (selectedOption.value) {
+					const course = selectedOption.getAttribute('data-course');
+					courseInput.value = course;
+				} else {
+					courseInput.value = '';
+				}
+			});
+		</script>
+	</body>
 </html>

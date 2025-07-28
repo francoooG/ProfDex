@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Edit Review</title>
+		<link rel="stylesheet" href="createpost.css">
+		<link rel="stylesheet" href="navbar.css">
+	</head>
+	<body>
+
+		<div id="navbar">
+			<a class="mainpage" href="/">Profdex</a>
+			<span class="navbar-buttons">
+				<a class="menu" href="/editprofile">About Me</a>
+				{{#if (and (ne userType 'professor') (ne userType 'manager'))}}
+				<a class="menu" href="/createpost">Create Review</a>
+				{{/if}}
+				<a class="menu" href="/help">Help</a>
+			</span>
+			<span class="search-buttons">
+				{{#if loggedInUser}}
+					<a class="login-button" href="/logout">Logout</a>
+				{{else}}
+					<a class="login-button" href="/login">Login</a>
+				{{/if}}
+				<form action="/viewprof" method="post">
+					<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+					<button type="submit" id="searchbutton"></button>
+				</form>
+			</span>
+		</div>
+		
+		<form action="/editreview" method="post">
+			<div>
+				<div class="main1">
+				
+					<div class="professorinput">
+						<span class="professorwho">Edit Review for {{reviewData.toname}}</span>
+						<div class="textinputs">
+							<input type="text" placeholder="Course" value="{{reviewData.course}}" class="inputbox" readonly>
+						</div>
+					</div>
+
+					<div class="slidersbox">
+						<div class="sliders">
+							<div> <span>1</span> <input type="range" min="1" max="5" value="{{divide reviewData.proficiency 2}}" class="slider" name="proficiency"> <span>5</span> <span class="attribute">PROFICIENCY</span></div>
+							<div> <span>1</span> <input type="range" min="1" max="5" value="{{divide reviewData.generosity 2}}" class="slider" name="generosity"> <span>5</span> <span class="attribute">GENEROSITY</span></div>
+							<div> <span>1</span> <input type="range" min="1" max="5" value="{{divide reviewData.engagement 2}}" class="slider" name="engagement"> <span>5</span> <span class="attribute">ENGAGEMENT</span></div>
+							<div> <span>1</span> <input type="range" min="1" max="5" value="{{divide reviewData.workload 2}}" class="slider" name="workload"> <span>5</span> <span class="attribute">WORKLOAD</span></div>
+							<div> <span>1</span> <input type="range" min="1" max="5" value="{{divide reviewData.difficulty 2}}" class="slider" name="difficulty"> <span>5</span> <span class="attribute">DIFFICULTY</span></div>
+						</div>
+					</div>
+			
+				</div>
+
+				<div class="reviewlayout">
+					<input type="text" name="text" class="reviewinput" placeholder="Write Review Here" value="{{reviewData.aPost.text}}" required>
+					<input type="hidden" name="reviewId" value="{{reviewData._id}}">
+					<div class="buttons">
+						<button id="submit" type="submit" class="button">Update Review</button>
+					</div>
+				</div>
+
+			</div>
+		</form>
+		{{#if errors.validation_error}}
+			<b class="professor-error">Please write a review with at least 10 characters.</b>
+		{{/if}}
+	</body>
+</html> 
