@@ -1,97 +1,278 @@
 <!DOCTYPE html>
-<html>
-	<head>
-		<title>Create a Post/Review</title>
-		<link rel="stylesheet" href="createpost.css">
-		<link rel="stylesheet" href="navbar.css">
-	</head>
-	<body>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Review - ProfDex</title>
+    <link rel="stylesheet" href="createpost.css">
+    <link rel="stylesheet" href="navbar.css">
+</head>
+<body>
+    <div id="navbar">
+        <a class="mainpage" href="/">Profdex</a>
+        <span class="navbar-buttons">
+            <a class="menu" href="/editprofile">About Me</a>
+            {{#if (ne userType 'professor')}}
+            <a class="menu" href="/createpost">Create Review</a>
+            {{/if}}
+            <a class="menu" href="/help">Help</a>
+        </span>
+        <span class="search-buttons">
+            {{#if loggedInUser}}
+                <a class="login-button" href="/logout">Logout</a>
+            {{else}}
+                <a class="login-button" href="/login">Login</a>
+            {{/if}}
+            {{#if (or (eq userType 'manager') (eq userType 'administrator'))}}
+            <a class="moderator-link" href="/moderator">Moderator</a>
+            {{/if}}
+            <a class="admin-link" href="/admin/login">Admin</a>
+            <form action="/viewprof" method="post">
+                <input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+                <button type="submit" id="searchbutton"></button>
+            </form>
+        </span>
+    </div>
 
-		<div id="navbar">
-			<a class="mainpage" href="/">Profdex</a>
-			<span class="navbar-buttons">
-				<a class="menu" href="/editprofile">About Me</a>
-				{{#if (and (ne userType 'professor') (ne userType 'manager'))}}
-				<a class="menu" href="/createpost">Create Review</a>
-				{{/if}}
-				<a class="menu" href="/help">Help</a>
-			</span>
-			<span class="search-buttons">
-				{{#if loggedInUser}}
-					<a class="login-button" href="/logout">Logout</a>
-				{{else}}
-					<a class="login-button" href="/login">Login</a>
-				{{/if}}
-				<form action="/viewprof" method="post">
-					<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
-					<button type="submit" id="searchbutton"></button>
-				</form>
-			</span>
-		</div>
-		
-		<form action="/createpost" method="post">
-			<div>
-				<div class="main1">
-				
-					<div class="professorinput">
-						<span class="professorwho">Who's that Professor?</span>
+    <div class="page-container">
+        <div class="create-header">
+            <div class="header-content">
+                <h1>Create Review</h1>
+                <p>Share your experience and help other students make informed decisions</p>
+                <div class="info-notice">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <span>Note: You can only create one review per professor. To create a new review, you must first delete your existing one.</span>
+                </div>
+            </div>
+        </div>
 
-						<div class="textinputs">
-							<select name="professorId" class="inputbox" id="professorSelect" required>
-								<option value="">Select a Professor</option>
-								{{#each professors}}
-									<option value="{{_id}}" data-course="{{subjects.[0].name}}">{{userId.firstName}} {{userId.lastName}} - {{subjects.[0].name}}</option>
-								{{/each}}
-							</select>
-							<input type="text" placeholder="Course" name="course" class="inputbox" id="courseInput" required>
-						</div>
-					</div>
+        <div class="main-content">
+            <form action="/createpost" method="post" class="create-form">
+                {{#if errors.professor_error}}
+                    <div class="alert alert-error">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        <span>Professor not found. Please try again.</span>
+                    </div>
+                {{/if}}
+                {{#if errors.validation_error}}
+                    <div class="alert alert-error">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        <span>Please fill all fields and write a review with at least 10 characters.</span>
+                    </div>
+                {{/if}}
+                {{#if errors.existing_review}}
+                    <div class="alert alert-error">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        <span>You already have a review for this professor. You can edit your existing review or delete it to create a new one.</span>
+                    </div>
+                {{/if}}
 
+                <div class="form-section">
+                    <div class="professor-selection">
+                        <h3>Select Professor</h3>
+                        <div class="selection-container">
+                            <div class="form-group">
+                                <label for="professorSelect">Professor</label>
+                                <select name="professorId" class="form-select" id="professorSelect" required>
+                                    <option value="">Choose a professor...</option>
+                                    {{#each professors}}
+                                        <option value="{{_id}}" data-course="{{subjects.[0].name}}">
+                                            {{userId.firstName}} {{userId.lastName}} - {{subjects.[0].name}}
+                                        </option>
+                                    {{/each}}
+                                </select>
+                                <div class="form-help">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                    </svg>
+                                    <span>Select the professor you want to review</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="courseInput">Course</label>
+                                <input type="text" placeholder="Enter course name" name="course" class="form-input" id="courseInput" required>
+                                <div class="form-help">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                    </svg>
+                                    <span>Specify the course you took with this professor</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-					<div class="slidersbox">
-						<div class="sliders">
-							<div> <span>1</span> <input type="range" min="1" max="5" value="3" class="slider" name="proficiency"> <span>5</span> <span class="attribute">PROFICIENCY</span></div>
-							<div> <span>1</span> <input type="range" min="1" max="5" value="3" class="slider" name="generosity"> <span>5</span> <span class="attribute">GENEROSITY</span></div>
-							<div> <span>1</span> <input type="range" min="1" max="5" value="3" class="slider" name="engagement"> <span>5</span> <span class="attribute">ENGAGEMENT</span></div>
-							<div> <span>1</span> <input type="range" min="1" max="5" value="3" class="slider" name="workload"> <span>5</span> <span class="attribute">WORKLOAD</span></div>
-							<div> <span>1</span> <input type="range" min="1" max="5" value="3" class="slider" name="difficulty"> <span>5</span> <span class="attribute">DIFFICULTY</span></div>
-						</div>
-					</div>
-			
-		
+                    <div class="ratings-section">
+                        <h3>Rating Attributes</h3>
+                        <p class="section-description">Rate the professor on different aspects of their teaching</p>
+                        
+                        <div class="ratings-grid">
+                            <div class="rating-item">
+                                <div class="rating-header">
+                                    <span class="rating-label">Proficiency</span>
+                                    <span class="rating-value" id="proficiencyValue">3/5</span>
+                                </div>
+                                <div class="slider-container">
+                                    <input type="range" min="1" max="5" value="3" class="rating-slider" name="proficiency" id="proficiency">
+                                    <div class="slider-labels">
+                                        <span>1</span>
+                                        <span>5</span>
+                                    </div>
+                                </div>
+                                <div class="rating-description">Knowledge and expertise in the subject</div>
+                            </div>
 
-				</div>
+                            <div class="rating-item">
+                                <div class="rating-header">
+                                    <span class="rating-label">Generosity</span>
+                                    <span class="rating-value" id="generosityValue">3/5</span>
+                                </div>
+                                <div class="slider-container">
+                                    <input type="range" min="1" max="5" value="3" class="rating-slider" name="generosity" id="generosity">
+                                    <div class="slider-labels">
+                                        <span>1</span>
+                                        <span>5</span>
+                                    </div>
+                                </div>
+                                <div class="rating-description">Willingness to help and accommodate students</div>
+                            </div>
 
+                            <div class="rating-item">
+                                <div class="rating-header">
+                                    <span class="rating-label">Engagement</span>
+                                    <span class="rating-value" id="engagementValue">3/5</span>
+                                </div>
+                                <div class="slider-container">
+                                    <input type="range" min="1" max="5" value="3" class="rating-slider" name="engagement" id="engagement">
+                                    <div class="slider-labels">
+                                        <span>1</span>
+                                        <span>5</span>
+                                    </div>
+                                </div>
+                                <div class="rating-description">How engaging and interactive the teaching is</div>
+                            </div>
 
-				<div class="reviewlayout">
-					<input type="text" name="text" class="reviewinput" placeholder="Write Review Here" required></textarea>
-					<div class="buttons">
-						<button id="submit" type="submit" class="button">Send</button>
-					</div>
-				</div>
+                            <div class="rating-item">
+                                <div class="rating-header">
+                                    <span class="rating-label">Workload</span>
+                                    <span class="rating-value" id="workloadValue">3/5</span>
+                                </div>
+                                <div class="slider-container">
+                                    <input type="range" min="1" max="5" value="3" class="rating-slider" name="workload" id="workload">
+                                    <div class="slider-labels">
+                                        <span>1</span>
+                                        <span>5</span>
+                                    </div>
+                                </div>
+                                <div class="rating-description">Amount and difficulty of assignments</div>
+                            </div>
 
+                            <div class="rating-item">
+                                <div class="rating-header">
+                                    <span class="rating-label">Difficulty</span>
+                                    <span class="rating-value" id="difficultyValue">3/5</span>
+                                </div>
+                                <div class="slider-container">
+                                    <input type="range" min="1" max="5" value="3" class="rating-slider" name="difficulty" id="difficulty">
+                                    <div class="slider-labels">
+                                        <span>1</span>
+                                        <span>5</span>
+                                    </div>
+                                </div>
+                                <div class="rating-description">Overall difficulty level of the course</div>
+                            </div>
+                        </div>
+                    </div>
 
-			</div>
-		</form>
-		{{#if errors.professor_error}}
-			<b class="professor-error">Professor not found.</b>
-		{{/if}}
-		{{#if errors.validation_error}}
-			<b class="professor-error">Please fill all fields and write a review with at least 10 characters.</b>
-		{{/if}}
-		
-		<script>
-			document.getElementById('professorSelect').addEventListener('change', function() {
-				const selectedOption = this.options[this.selectedIndex];
-				const courseInput = document.getElementById('courseInput');
-				
-				if (selectedOption.value) {
-					const course = selectedOption.getAttribute('data-course');
-					courseInput.value = course;
-				} else {
-					courseInput.value = '';
-				}
-			});
-		</script>
-	</body>
+                    <div class="review-section">
+                        <h3>Write Your Review</h3>
+                        <p class="section-description">Share your detailed experience and insights</p>
+                        
+                        <div class="form-group">
+                            <label for="reviewText">Review</label>
+                            <textarea name="text" id="reviewText" class="form-textarea" placeholder="Write your detailed review here... Share your experience, what you liked, what could be improved, and any advice for future students. Minimum 10 characters required." rows="6" required></textarea>
+                            <div class="form-help">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                </svg>
+                                <span>Be specific and constructive. Your review helps other students make informed decisions.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="submit-btn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 2L11 13"/>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                            Submit Review
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Auto-fill course when professor is selected
+        document.getElementById('professorSelect').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const courseInput = document.getElementById('courseInput');
+            
+            if (selectedOption.value) {
+                const course = selectedOption.getAttribute('data-course');
+                courseInput.value = course;
+            } else {
+                courseInput.value = '';
+            }
+        });
+
+        // Update rating values in real-time
+        const sliders = document.querySelectorAll('.rating-slider');
+        sliders.forEach(slider => {
+            slider.addEventListener('input', function() {
+                const value = this.value;
+                const valueElement = document.getElementById(this.id + 'Value');
+                if (valueElement) {
+                    valueElement.textContent = value + '/5';
+                }
+            });
+        });
+
+        // Character count for review text
+        const reviewText = document.getElementById('reviewText');
+        reviewText.addEventListener('input', function() {
+            const charCount = this.value.length;
+            const minChars = 10;
+            
+            if (charCount < minChars) {
+                this.classList.add('invalid');
+            } else {
+                this.classList.remove('invalid');
+            }
+        });
+    </script>
+</body>
 </html>

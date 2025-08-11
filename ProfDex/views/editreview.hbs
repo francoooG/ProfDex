@@ -1,69 +1,197 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Edit Review</title>
-		<link rel="stylesheet" href="createpost.css">
-		<link rel="stylesheet" href="navbar.css">
-	</head>
-	<body>
+<head>
+    <title>Edit Review</title>
+    <link rel="stylesheet" href="editreview.css">
+    <link rel="stylesheet" href="navbar.css">
+</head>
+<body>
+    <div id="navbar">
+        <a class="mainpage" href="/">Profdex</a>
+        <span class="navbar-buttons">
+            <a class="menu" href="/editprofile">About Me</a>
+            {{#if (ne userType 'professor')}}
+            <a class="menu" href="/createpost">Create Review</a>
+            {{/if}}
+            <a class="menu" href="/help">Help</a>
+            {{#if (eq userType 'administrator')}}
+            <a class="admin-link" href="/admin">Admin</a>
+            {{/if}}
+            {{#if (eq userType 'moderator')}}
+            <a class="moderator-link" href="/moderator">Moderator</a>
+            {{/if}}
+        </span>
+        <span class="search-buttons">
+            {{#if loggedInUser}}
+                <a class="login-button" href="/logout">Logout</a>
+            {{else}}
+                <a class="login-button" href="/login">Login</a>
+            {{/if}}
+            <form action="/viewprof" method="post">
+                <input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+                <button type="submit" id="searchbutton"></button>
+            </form>
+        </span>
+    </div>
 
-		<div id="navbar">
-			<a class="mainpage" href="/">Profdex</a>
-			<span class="navbar-buttons">
-				<a class="menu" href="/editprofile">About Me</a>
-				{{#if (and (ne userType 'professor') (ne userType 'manager'))}}
-				<a class="menu" href="/createpost">Create Review</a>
-				{{/if}}
-				<a class="menu" href="/help">Help</a>
-			</span>
-			<span class="search-buttons">
-				{{#if loggedInUser}}
-					<a class="login-button" href="/logout">Logout</a>
-				{{else}}
-					<a class="login-button" href="/login">Login</a>
-				{{/if}}
-				<form action="/viewprof" method="post">
-					<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
-					<button type="submit" id="searchbutton"></button>
-				</form>
-			</span>
-		</div>
-		
-		<form action="/editreview" method="post">
-			<div>
-				<div class="main1">
-				
-					<div class="professorinput">
-						<span class="professorwho">Edit Review for {{reviewData.toname}}</span>
-						<div class="textinputs">
-							<input type="text" placeholder="Course" value="{{reviewData.course}}" class="inputbox" readonly>
-						</div>
-					</div>
+    <div class="page-container">
+        <div class="edit-header">
+            <div class="header-content">
+                <h1>Edit Review</h1>
+                <p>Update your review for {{reviewData.toname}}</p>
+            </div>
+        </div>
 
-					<div class="slidersbox">
-						<div class="sliders">
-							<div> <span>1</span> <input type="range" min="1" max="5" value="{{divide reviewData.proficiency 2}}" class="slider" name="proficiency"> <span>5</span> <span class="attribute">PROFICIENCY</span></div>
-							<div> <span>1</span> <input type="range" min="1" max="5" value="{{divide reviewData.generosity 2}}" class="slider" name="generosity"> <span>5</span> <span class="attribute">GENEROSITY</span></div>
-							<div> <span>1</span> <input type="range" min="1" max="5" value="{{divide reviewData.engagement 2}}" class="slider" name="engagement"> <span>5</span> <span class="attribute">ENGAGEMENT</span></div>
-							<div> <span>1</span> <input type="range" min="1" max="5" value="{{divide reviewData.workload 2}}" class="slider" name="workload"> <span>5</span> <span class="attribute">WORKLOAD</span></div>
-							<div> <span>1</span> <input type="range" min="1" max="5" value="{{divide reviewData.difficulty 2}}" class="slider" name="difficulty"> <span>5</span> <span class="attribute">DIFFICULTY</span></div>
-						</div>
-					</div>
-			
-				</div>
+        <div class="main-content">
+            <form action="/editreview" method="post" class="edit-form">
+                <div class="form-section">
+                    <div class="professor-info">
+                        <div class="professor-card">
+                            <div class="professor-avatar">
+                                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="#667eea"/>
+                                </svg>
+                            </div>
+                            <div class="professor-details">
+                                <h3>{{reviewData.toname}}</h3>
+                                <div class="course-badge">
+                                    <span class="course-text">{{reviewData.course}}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-				<div class="reviewlayout">
-					<input type="text" name="text" class="reviewinput" placeholder="Write Review Here" value="{{reviewData.aPost.text}}" required>
-					<input type="hidden" name="reviewId" value="{{reviewData._id}}">
-					<div class="buttons">
-						<button id="submit" type="submit" class="button">Update Review</button>
-					</div>
-				</div>
+                    <div class="ratings-section">
+                        <h3>Rating Attributes</h3>
+                        <div class="ratings-grid">
+                            <div class="rating-item">
+                                <div class="rating-header">
+                                    <span class="rating-label">Proficiency</span>
+                                    <span class="rating-value">{{divide reviewData.proficiency 2}}/5</span>
+                                </div>
+                                <div class="slider-container">
+                                    <input type="range" min="1" max="5" value="{{divide reviewData.proficiency 2}}" class="rating-slider" name="proficiency" id="proficiency">
+                                    <div class="slider-labels">
+                                        <span>1</span>
+                                        <span>5</span>
+                                    </div>
+                                </div>
+                            </div>
 
-			</div>
-		</form>
-		{{#if errors.validation_error}}
-			<b class="professor-error">Please write a review with at least 10 characters.</b>
-		{{/if}}
-	</body>
+                            <div class="rating-item">
+                                <div class="rating-header">
+                                    <span class="rating-label">Generosity</span>
+                                    <span class="rating-value">{{divide reviewData.generosity 2}}/5</span>
+                                </div>
+                                <div class="slider-container">
+                                    <input type="range" min="1" max="5" value="{{divide reviewData.generosity 2}}" class="rating-slider" name="generosity" id="generosity">
+                                    <div class="slider-labels">
+                                        <span>1</span>
+                                        <span>5</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rating-item">
+                                <div class="rating-header">
+                                    <span class="rating-label">Engagement</span>
+                                    <span class="rating-value">{{divide reviewData.engagement 2}}/5</span>
+                                </div>
+                                <div class="slider-container">
+                                    <input type="range" min="1" max="5" value="{{divide reviewData.engagement 2}}" class="rating-slider" name="engagement" id="engagement">
+                                    <div class="slider-labels">
+                                        <span>1</span>
+                                        <span>5</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rating-item">
+                                <div class="rating-header">
+                                    <span class="rating-label">Workload</span>
+                                    <span class="rating-value">{{divide reviewData.workload 2}}/5</span>
+                                </div>
+                                <div class="slider-container">
+                                    <input type="range" min="1" max="5" value="{{divide reviewData.workload 2}}" class="rating-slider" name="workload" id="workload">
+                                    <div class="slider-labels">
+                                        <span>1</span>
+                                        <span>5</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="rating-item">
+                                <div class="rating-header">
+                                    <span class="rating-label">Difficulty</span>
+                                    <span class="rating-value">{{divide reviewData.difficulty 2}}/5</span>
+                                </div>
+                                <div class="slider-container">
+                                    <input type="range" min="1" max="5" value="{{divide reviewData.difficulty 2}}" class="rating-slider" name="difficulty" id="difficulty">
+                                    <div class="slider-labels">
+                                        <span>1</span>
+                                        <span>5</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="review-section">
+                    <h3>Review Text</h3>
+                    <div class="review-input-container">
+                        <textarea name="text" class="review-textarea" placeholder="Write your review here..." required>{{reviewData.aPost.text}}</textarea>
+                        <div class="character-count">
+                            <span class="count-text">{{reviewData.aPost.text.length}} characters</span>
+                            <span class="min-required">Minimum 10 characters required</span>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" name="reviewId" value="{{reviewData._id}}">
+                
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" onclick="history.back()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="currentColor"/>
+                        </svg>
+                        Cancel
+                    </button>
+                    <button type="submit" class="update-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 17.25V21H6.75L17.81 9.94L14.06 6.19L3 17.25ZM20.71 7.04C21.1 6.65 21.1 6.02 20.71 5.63L18.37 3.29C17.98 2.9 17.35 2.9 16.96 3.29L15.13 5.12L18.88 8.87L20.71 7.04Z" fill="currentColor"/>
+                        </svg>
+                        Update Review
+                    </button>
+                </div>
+            </form>
+
+            {{#if errors.validation_error}}
+            <div class="error-alert">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22 22 17.52 22 12 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z" fill="#ef4444"/>
+                </svg>
+                <span>Please write a review with at least 10 characters.</span>
+            </div>
+            {{/if}}
+        </div>
+    </div>
+
+    <script>
+        // Update rating values when sliders change
+        document.querySelectorAll('.rating-slider').forEach(slider => {
+            slider.addEventListener('input', function() {
+                const ratingItem = this.closest('.rating-item');
+                const valueDisplay = ratingItem.querySelector('.rating-value');
+                valueDisplay.textContent = this.value + '/5';
+            });
+        });
+
+        // Update character count when typing
+        document.querySelector('.review-textarea').addEventListener('input', function() {
+            const countText = document.querySelector('.count-text');
+            countText.textContent = this.value.length + ' characters';
+        });
+    </script>
+</body>
 </html> 

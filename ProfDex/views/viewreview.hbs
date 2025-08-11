@@ -1,108 +1,187 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<link rel="stylesheet" href="navbar.css">
-	<link rel="stylesheet" href="viewreview.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Details - ProfDex</title>
+    <link rel="stylesheet" href="navbar.css">
+    <link rel="stylesheet" href="viewreview.css">
 </head>
-
 <body>
-	<div id="navbar">
-		<a class="mainpage" href="/">Profdex</a>
-		<span class="navbar-buttons">
-			<a class="menu" href="/editprofile">About Me</a>
-			{{#if (and (ne userType 'professor') (ne userType 'manager'))}}
-			<a class="menu" href="/createpost">Create Review</a>
-			{{/if}}
-			<a class="menu" href="/help">Help</a>
-		</span>
-		<span class="search-buttons">
-			{{#if loggedInUser}}
-				<a class="login-button" href="/logout">Logout</a>
-			{{else}}
-				<a class="login-button" href="/login">Login</a>
-			{{/if}}
-			<form action="/viewprof" method="post">
-				<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
-				<button type="submit" id="searchbutton"></button>
-			</form>
-		</span>
-	</div>
+    <div id="navbar">
+        <a class="mainpage" href="/">Profdex</a>
+        <span class="navbar-buttons">
+            <a class="menu" href="/editprofile">About Me</a>
+            {{#if (ne userType 'professor')}}
+            <a class="menu" href="/createpost">Create Review</a>
+            {{/if}}
+            <a class="menu" href="/help">Help</a>
+        </span>
+        <span class="search-buttons">
+            {{#if loggedInUser}}
+                <a class="login-button" href="/logout">Logout</a>
+            {{else}}
+                <a class="login-button" href="/login">Login</a>
+            {{/if}}
+            {{#if (or (eq userType 'manager') (eq userType 'administrator'))}}
+            <a class="moderator-link" href="/moderator">Moderator</a>
+            {{/if}}
+            <a class="admin-link" href="/admin/login">Admin</a>
+            <form action="/viewprof" method="post">
+                <input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+                <button type="submit" id="searchbutton"></button>
+            </form>
+        </span>
+    </div>
 
+    <div class="page-container">
+        {{#with professorData}}
+        <div class="professor-header">
+            <div class="header-content">
+                <h1 class="professor-title">{{aProfessor.title}} {{aProfessor.lastname}}</h1>
+                {{#with ../postData}}
+                <p class="course-subtitle">{{course}}</p>
+                {{/with}}
+            </div>
+        </div>
+        {{/with}}
 
-	<div id="filter">
-		{{#with professorData}}
-			<a id="professorname" href="/viewprof?id={{_id}}" style="position: absolute; margin-top: 10px; margin-left: 100px;">{{aProfessor.title}} {{aProfessor.lastname}}</a>
-		{{/with}}
-		{{#with postData}}
-			<a class="filter" style="margin-top: 37px; margin-left: 100px;">{{course}}</a>
-		{{/with}}
-	</div>
+        <div class="main-content">
+            <div class="review-section">
+                <div class="section-header">
+                    <h2>Review Details</h2>
+                    <p>Student feedback and ratings</p>
+                </div>
+                
+                {{#with postData}}
+                <div class="review-card">
+                    <div class="review-left-panel">
+                        <div class="review-author-info">
+                            <h3>By: {{opname}}</h3>
+                        </div>
+                        
+                        <div class="ratings-display">
+                            <div class="rating-item">
+                                <div class="rating-icon" id="generosity"></div>
+                                <div class="rating-bar">
+                                    <div class="bar-fill" style="height: {{multiply (divide generosity 2) 20}}%"></div>
+                                </div>
+                                <span class="rating-value">{{divide generosity 2}}/5</span>
+                                <span class="rating-label">Generosity</span>
+                            </div>
+                            
+                            <div class="rating-item">
+                                <div class="rating-icon" id="workload"></div>
+                                <div class="rating-bar">
+                                    <div class="bar-fill" style="height: {{multiply (divide workload 2) 20}}%"></div>
+                                </div>
+                                <span class="rating-value">{{divide workload 2}}/5</span>
+                                <span class="rating-label">Workload</span>
+                            </div>
+                            
+                            <div class="rating-item">
+                                <div class="rating-icon" id="proficiency"></div>
+                                <div class="rating-bar">
+                                    <div class="bar-fill" style="height: {{multiply (divide proficiency 2) 20}}%"></div>
+                                </div>
+                                <span class="rating-value">{{divide proficiency 2}}/5</span>
+                                <span class="rating-label">Proficiency</span>
+                            </div>
+                            
+                            <div class="rating-item">
+                                <div class="rating-icon" id="difficulty"></div>
+                                <div class="rating-bar">
+                                    <div class="bar-fill" style="height: {{multiply (divide difficulty 2) 20}}%"></div>
+                                </div>
+                                <span class="rating-value">{{divide difficulty 2}}/5</span>
+                                <span class="rating-label">Difficulty</span>
+                            </div>
+                            
+                            <div class="rating-item">
+                                <div class="rating-icon" id="engagement"></div>
+                                <div class="rating-bar">
+                                    <div class="bar-fill" style="height: {{multiply (divide engagement 2) 20}}%"></div>
+                                </div>
+                                <span class="rating-value">{{divide engagement 2}}/5</span>
+                                <span class="rating-label">Engagement</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="review-right-panel">
+                        <div class="review-text-container">
+                            <h4>Review Content</h4>
+                            <div class="review-text">
+                                {{aPost.text}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{/with}}
+            </div>
 
+            <div class="comments-section">
+                <div class="section-header">
+                    <h2>Comments</h2>
+                    <p>Discussion and feedback from the community</p>
+                </div>
+                
+                <div class="comments-container">
+                    {{#if commentData.length}}
+                        {{#each commentData}}
+                        <div class="comment-card">
+                            <div class="comment-header">
+                                <div class="comment-author">
+                                    <span class="author-name">{{opname}}</span>
+                                    <span class="comment-meta">@{{toname}} ({{to}})</span>
+                                    <span class="comment-date">{{date}}</span>
+                                </div>
+                                {{#if (or (eq op ../loggedInUser._id) (eq ../userType 'manager'))}}
+                                <form action="/deletecomment" method="POST" class="delete-form">
+                                    <input type="hidden" name="commentId" value="{{_id}}">
+                                    <input type="hidden" name="postId" value="{{post}}">
+                                    <button type="submit" class="delete-btn" onclick="return confirm('Are you sure you want to delete this comment?')">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                                {{/if}}
+                            </div>
+                            <div class="comment-content">
+                                {{aComment.text}}
+                            </div>
+                        </div>
+                        {{/each}}
+                    {{else}}
+                        <div class="no-comments">
+                            <div class="no-comments-icon">💬</div>
+                            <h3>No Comments Yet</h3>
+                            <p>Be the first to share your thoughts!</p>
+                        </div>
+                    {{/if}}
+                </div>
 
-	<div style="display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: 100px;">
-		<h2 style="align-self: flex-start; margin-left: 100px; color: #e65c00; font-family: 'proxima_nova_rgbold';">Review</h2>
-		{{#with postData}}
-		<div class="container" style="width: 80%; background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); display: flex; flex-direction: row; align-items: flex-start; padding: 32px 24px; margin-bottom: 32px;">
-			<div class="actual-review-container" style="max-width: 270px;">
-				<div id="review">
-					<div class="review-header">
-						<a class="review-author" href="/viewuser?id={{op}}">By: {{opname}}</a>
-					</div>
-					<img id="generosity" src="images/transparent.png" width="1" height="1" style="margin-left: 20px; margin-top: 225px;">
-					<div class="bar" style="margin-top: 200px; margin-left: 22px; width: 25px; transform-origin: bottom; transform: scaleY({{generosity}}); background-color: green">&nbsp</div>
-					<img id="workload" src="images/transparent.png" width="1" height="1" style="margin-left: 68px; margin-top: 225px;">
-					<div class="bar" style="margin-top: 200px; margin-left: 71px; width: 25px; transform-origin: bottom; transform: scaleY({{workload}}); background-color: green">&nbsp</div>
-					<img id="proficiency" src="images/transparent.png" width="1" height="1" style="margin-left: 115px; margin-top: 225px;">
-					<div class="bar" style="margin-top: 200px; margin-left: 119px; width: 25px; transform-origin: bottom; transform: scaleY({{proficiency}}); background-color: green">&nbsp</div>
-					<img id="difficulty" src="images/transparent.png" width="1" height="1" style="margin-left: 160px; margin-top: 225px;">
-					<div class="bar" style="margin-top: 200px; margin-left: 168px; width: 25px; transform-origin: bottom; transform: scaleY({{difficulty}}); background-color: green">&nbsp</div>
-					<img id="engagement" src="images/transparent.png" width="1" height="1" style="margin-left: 210px; margin-top: 225px;">
-					<div class="bar" style="margin-top: 200px; margin-left: 214px; width: 25px; transform-origin: bottom; transform: scaleY({{engagement}}); background-color: green">&nbsp</div>
-				</div>
-			</div>
-			<div class="review-text" style="background: #f9f9f9; border-radius: 10px; box-shadow: 0 1px 6px rgba(0,0,0,0.04); margin-left: 40px; padding: 20px; width: 100%; min-height: 120px; max-height: 260px; overflow-y: auto; display: flex; align-items: flex-start;">
-				<span class="text" style="font-size: 1.1rem; color: #595959; word-break: break-word;">{{aPost.text}}</span>
-			</div>
-
-		</div>
-		{{/with}}
-
-		<h2 style="align-self: flex-start; margin-left: 100px; color: #e65c00; font-family: 'proxima_nova_rgbold';">Comments</h2>
-		<div id="lot" style="margin-bottom: 40px; width: 80%;">
-			{{#if commentData.length}}
-				{{#each commentData}}
-				<div class="container" style="background: #fff; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); padding: 18px 24px 12px 24px; max-width: 100%; margin-bottom: 18px;">
-					<div class="comment-header" style="display: flex; align-items: center;">
-						<a class="comment-profile" href="/viewuser?id={{op}}" style="margin-right: 10px;"></a>
-						<a class="comment-username" href="/viewuser?id={{op}}" style="font-weight: bold; color: #e65c00; margin-right: 10px;">{{opname}}</a>
-						<span style="color: #888; font-size: 0.95em; margin-right: 10px;">@{{toname}} ({{to}}) - {{date}}</span>
-						{{#if (or (eq op ../loggedInUser._id) (eq ../userType 'manager'))}}
-						<form action="/deletecomment" method="POST" style="display:inline; margin-left: 10px;">
-							<input type="hidden" name="commentId" value="{{_id}}">
-							<input type="hidden" name="postId" value="{{post}}">
-							<button type="submit" class="delete-comment" style="color:red; background: none; border: none; cursor: pointer;">Delete</button>
-						</form>
-						{{/if}}
-					</div>
-					<div class="text-comment" style="margin-top: 8px; color: #444; font-size: 1.05em;">{{aComment.text}}</div>
-				</div>
-				{{/each}}
-			{{else}}
-				<div style="margin-left:10px; color: #888; font-size: 1.1em;">No comments yet. Be the first to comment!</div>
-			{{/if}}
-		</div>
-		<div>
-	   <form action="/reply" method="post" style="display: flex; flex-direction: column; min-width: 500px; margin-left: 100px; margin-top: 0; padding: 20px; background: #f9f9f9; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.07);">
-		   <label for="comment" style="font-weight: bold; margin-bottom: -250px;">Add a Comment:</label>
-		   <textarea id="comment" name="commentText" placeholder="Comment here!" required style="margin-left: 10px; margin-bottom: 10px; max-height: 100px;"></textarea>
-		   <input type="hidden" name="post" value="{{postData._id}}">
-		   <input type="hidden" name="to" value="{{postData.op}}">
-		   <input type="hidden" name="toname" value="{{postData.opname}}">
-		   <button id="submit" type="submit" class="submit" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-size: 16px; cursor: pointer; width: fit-content; align-self: flex-end; margin-top: 200px;">Post Comment</button>
-	   </form>
-		</div>
-	</div>
-
-
-
+                <div class="add-comment-section">
+                    <h3>Add a Comment</h3>
+                    <form action="/reply" method="post" class="comment-form">
+                        <div class="form-group">
+                            <textarea 
+                                id="comment" 
+                                name="commentText" 
+                                placeholder="Share your thoughts about this review..." 
+                                required
+                                rows="4"
+                            ></textarea>
+                        </div>
+                        <input type="hidden" name="post" value="{{postData._id}}">
+                        <input type="hidden" name="to" value="{{postData.op}}">
+                        <input type="hidden" name="toname" value="{{postData.opname}}">
+                        <button type="submit" class="submit-btn">Post Comment</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

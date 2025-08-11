@@ -18,12 +18,15 @@
             <div class="professor-thumbnail">
                 <div class="professor-links">
                     {{#each data}}
-                        <a class="profDP" href='/reviewlist?id={{_id}}' style="background-image: url(images/teacher.jpg);">
-                            <div class="hiddenDate" style="display:none;">1</div>
-                            <div class="profTitle">Dr.</div>
-                            <div class="profName">{{userId.lastName}}</div>
-                            <div class="profCourse">{{subjects.[0].name}}</div>
-                        </a>	
+                        <div class="professor-card-container">
+                            <a class="profDP" href='/reviewlist?id={{_id}}' style="background-image: url(images/teacher.jpg);">
+                                <div class="hiddenDate" style="display:none;">1</div>
+                                <div class="profTitle">Dr.</div>
+                                <div class="profName">{{userId.lastName}}</div>
+                                <div class="profCourse">{{subjects.[0].name}}</div>
+                            </a>
+                            <a href="/viewprof?id={{_id}}" class="view-profile-link">View Profile</a>
+                        </div>	
                     {{/each}}
                 </div>
             </div>
@@ -33,7 +36,7 @@
             <a class="mainpage" href="/">Profdex</a>
             <span class="navbar-buttons">
                 <a class="menu" href="/editprofile">About Me</a>
-            {{#if (and (ne userType 'professor') (ne userType 'manager'))}}
+            {{#if (ne userType 'professor')}}
             <a class="menu" href="/createpost">Create Review</a>
             {{/if}}
                 <a class="menu" href="/help">Help</a>
@@ -44,6 +47,10 @@
                 {{else}}
                     <a class="login-button" href="/login">Login</a>
                 {{/if}}
+                {{#if (or (eq userType 'manager') (eq userType 'administrator'))}}
+                <a class="moderator-link" href="/moderator">Moderator</a>
+                {{/if}}
+                <a class="admin-link" href="/admin/login">Admin</a>
                 <form action="/viewprof" method="post">
                     <input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
                     <button type="submit" id="searchbutton"></button>

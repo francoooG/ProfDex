@@ -1,134 +1,409 @@
-body {
-    height:100%;
+/* Modern ProfDex Review List Design - Matching Admin Aesthetic */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
-    
-#review {
-    position: relative;
-    top: 0;
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #333;
+    line-height: 1.6;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden;
     display: flex;
-    z-index:1;
-    overflow: hidden;
-    background-image: url('images/ReviewBackground.png'); 
-	border-radius: 5px;
-    border-bottom: 2px solid #8c8c8c;
-	margin-top: 20px;
-	margin-left: 20px;
-    width: 260px;
-    height: 260px; 
+    flex-direction: column;
+    align-items: center;
+}
+
+.page-container {
+    margin-top: 80px;
+    min-height: calc(100vh - 80px);
+    width: 100%;
+}
+
+.professor-header {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 40px 20px;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.header-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.professor-title {
+    font-size: 3rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.professor-subtitle {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+}
+
+.view-profile-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    margin-top: 20px;
+}
+
+.view-profile-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.view-profile-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.reviews-section {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    margin-bottom: 30px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.section-header h2 {
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.section-header p {
+    font-size: 1.1rem;
+    color: #666;
+}
+
+.reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+    width: 100%;
+    max-width: 100%;
+}
+
+.review-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e1e5e9;
+    transition: all 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.review-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    border-color: #667eea;
 }
 
 .review-header {
-    top: 0;
     display: flex;
-    z-index:1;
-    overflow: hidden;
-    background-image: url('images/ReviewHeaderBackground.png'); 
-	border-radius: 5px;
-    border-bottom: 2px solid #8c8c8c;
-    width: 270px;
-    height: 25px; 
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e1e5e9;
 }
 
-.bar{
-    position: absolute;
-	transform-origin: bottom;
-    transform: scaleY(2);
-	background-color: green;
+.review-author {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.author-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.author-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.author-badge.manager {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+}
+
+.delete-form {
+    margin: 0;
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-btn:hover {
+    background: rgba(220, 53, 69, 0.1);
+    transform: scale(1.1);
+}
+
+.ratings-section {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.rating-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.rating-icon {
+    width: 32px;
+    height: 32px;
+    background-image: url(images/AttributesSprites.png);
+    background-repeat: no-repeat;
+    background-size: 160px auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 #proficiency {
-    position: absolute;
-    width: 31px;
-    height: 26px;
-    background: url(images/AttributesSprites.png) 0 0;
+    background-position: 0 0;
 }
 
 #generosity {
-    position: absolute;
-    width: 31px;
-    height: 26px;
-    background: url(images/AttributesSprites.png) 0 0;
-	background-position: -44px 0px;
+    background-position: -32px 0;
 }
 
 #engagement {
-    position: absolute;
-    width: 31px;
-    height: 26px;
-    background: url(images/AttributesSprites.png) 0 0;
-	background-position: -87px 0px;
+    background-position: -64px 0;
 }
 
 #workload {
-    position: absolute;
-    width: 31px;
-    height: 26px;
-    background: url(images/AttributesSprites.png) 0 0;
-	background-position: -132px 0px;
+    background-position: -96px 0;
 }
 
 #difficulty {
+    background-position: -128px 0;
+}
+
+.rating-bar {
+    width: 20px;
+    height: 80px;
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.bar-fill {
     position: absolute;
-    width: 31px;
-    height: 26px;
-    background: url(images/AttributesSprites.png) 0 0;
-	background-position: -169px 0px;
-}
-
-.review-container {
-    position: absolute;
-    display:inline-flex;
-    margin-top: 130px;
-	margin-left: 310px;
-    align-items: flex-start;
-    background-color: transparent;
-}
-
-.actual-review-container {
-	display:flex;
-    flex-flow: wrap;
-    min-height: 100px;
-	overflow: hidden;
-    align-items: flex-end;
-    width: 1000px;
-}
-
-#professorname {
-	text-decoration: none;
-    font-family: 'proxima_nova_rgbold';
-	font-size: 25px;
-	color: #e65c00;
-}
-
-#filter {
-    position: absolute;
-	display:inline-flex;
+    bottom: 0;
     width: 100%;
-    height: 60px;
-	background-image: url('images/ReviewFilterBackground.png'); 
-	margin-top: 50px;
-	border-bottom: 2px solid #666666;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-radius: 10px;
+    transition: height 0.5s ease;
 }
 
-a.filter {
-    position: absolute;
+.rating-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #666;
+}
+
+.review-actions {
+    text-align: center;
+    padding-top: 15px;
+    border-top: 1px solid #e1e5e9;
+}
+
+.view-review-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
     text-decoration: none;
-    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
-    font-size: 1rem;
-	color: #595959;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    display: inline-block;
 }
 
-a.page {
-    position: absolute;
+.view-review-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.no-reviews {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.no-reviews-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.no-reviews h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.no-reviews p {
+    font-size: 1.1rem;
+    margin-bottom: 25px;
+}
+
+.create-review-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
     text-decoration: none;
-    font-family: 'proxima_nova_rgbold';
+    padding: 12px 30px;
+    border-radius: 25px;
+    font-weight: 600;
     font-size: 1rem;
-	color: #595959;
+    transition: all 0.3s ease;
+    display: inline-block;
 }
 
-a.review-author {
-	margin-top: 5px;
-	margin-left: 5px;
-	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
-	color: #595959;
+.create-review-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .professor-header {
+        padding: 30px 15px;
+        margin-top: 70px;
+    }
+    
+    .professor-title {
+        font-size: 2.5rem;
+    }
+    
+    .main-container {
+        padding: 20px 15px;
+    }
+    
+    .reviews-section {
+        padding: 25px 20px;
+    }
+    
+    .reviews-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .ratings-section {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+    }
+    
+    .rating-icon {
+        width: 28px;
+        height: 28px;
+        background-size: 140px auto;
+    }
+    
+    .rating-bar {
+        width: 18px;
+        height: 70px;
+    }
+}
+
+@media (max-width: 480px) {
+    .professor-title {
+        font-size: 2rem;
+    }
+    
+    .professor-subtitle {
+        font-size: 1rem;
+    }
+    
+    .section-header h2 {
+        font-size: 1.8rem;
+    }
+    
+    .reviews-section {
+        padding: 20px 15px;
+    }
+    
+    .review-card {
+        padding: 20px;
+    }
+    
+    .ratings-section {
+        gap: 8px;
+    }
+    
+    .rating-icon {
+        width: 24px;
+        height: 24px;
+        background-size: 120px auto;
+    }
+    
+    .rating-bar {
+        width: 16px;
+        height: 60px;
+    }
 }

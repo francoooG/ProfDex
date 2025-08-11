@@ -9,12 +9,15 @@
         <a class="mainpage" href="/">Profdex</a>
         <span class="navbar-buttons">
             <a class="menu" href="/editprofile">About Me</a>
-            {{#if (and (ne userType 'professor') (ne userType 'manager'))}}
+            {{#if (ne userType 'professor')}}
             <a class="menu" href="/createpost">Create Review</a>
             {{/if}}
         </span>
         <span class="search-buttons">
             <a class="login-button" href="/login">Login</a>
+            {{#if (or (eq userType 'manager') (eq userType 'administrator'))}}
+            <a class="moderator-link" href="/moderator">Moderator</a>
+            {{/if}}
             <a class="admin-link" href="/admin/login">Admin</a>
             <input type="text" class="search" id="search" name="search" placeholder="Course/Professor">
             <input type="image" id="searchbutton" src="images/Search.png">

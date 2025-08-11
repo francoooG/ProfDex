@@ -141,7 +141,7 @@ var postSchema = new Schema({
         text: String
     },
     op: String,
-    to: String,
+    to: { type: Schema.Types.ObjectId, ref: 'Professors' },
     course: String,
     opname: String,
     toname: String,
@@ -159,7 +159,7 @@ var commentSchema = new Schema({
         text: String
     },
     op: String,
-    to: String,
+    to: { type: Schema.Types.ObjectId, ref: 'Professors' },
     post: String,
     opname: String,
     toname: String,

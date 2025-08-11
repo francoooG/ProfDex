@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Professor Search Results</title>
+    <link rel="stylesheet" href="professor_search.css">
+    <link rel="stylesheet" href="navbar.css">
+</head>
+<body>
+    <div id="navbar">
+        <a class="mainpage" href="/">Profdex</a>
+        <span class="navbar-buttons">
+            <a class="menu" href="/editprofile">About Me</a>
+            {{#if (ne userType 'professor')}}
+            <a class="menu" href="/createpost">Create Review</a>
+            {{/if}}
+            <a class="menu" href="/help">Help</a>
+            {{#if (eq userType 'administrator')}}
+            <a class="admin-link" href="/admin">Admin</a>
+            {{/if}}
+            {{#if (eq userType 'moderator')}}
+            <a class="moderator-link" href="/moderator">Moderator</a>
+            {{/if}}
+        </span>
+        <span class="search-buttons">
+            {{#if loggedInUser}}
+                <a class="login-button" href="/logout">Logout</a>
+            {{else}}
+                <a class="login-button" href="/login">Login</a>
+            {{/if}}
+            <form action="/viewprof" method="post">
+                <input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+                <button type="submit" id="searchbutton"></button>
+            </form>
+        </span>
+    </div>
+
+    <div class="page-container">
+        <div class="search-header">
+            <div class="header-content">
+                <h1>Search Results</h1>
+                <p>Professors matching "{{searchTerm}}"</p>
+            </div>
+        </div>
+
+        <div class="main-content">
+            {{#if results.length}}
+                <div class="results-info">
+                    <span class="results-count">{{results.length}} professor{{#if (ne results.length 1)}}s{{/if}} found</span>
+                </div>
+                
+                <div class="professors-grid">
+                    {{#each results}}
+                    <div class="professor-card">
+                        <div class="professor-avatar">
+                            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="#667eea"/>
+                            </svg>
+                        </div>
+                        <div class="professor-info">
+                            <h3 class="professor-name">{{user.firstName}} {{user.lastName}}</h3>
+                            <div class="professor-details">
+                                <span class="teacher-id">ID: {{professor.teacherID}}</span>
+                                {{#if professor.bio}}
+                                <p class="bio">{{professor.bio}}</p>
+                                {{/if}}
+                            </div>
+                        </div>
+                        <div class="professor-actions">
+                            <a href="/viewprof?id={{professor._id}}" class="view-profile-btn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12C2.73 16.39 7 19.5 12 19.5C17 19.5 21.27 16.39 23 12C21.27 7.61 17 4.5 12 4.5ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17ZM12 9C10.34 9 9 10.34 9 12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12C15 10.34 13.66 9 12 9Z" fill="currentColor"/>
+                                </svg>
+                                View Profile
+                            </a>
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+            {{else}}
+                <div class="no-results">
+                    <div class="no-results-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15.5 14H14.71L14.43 13.73C15.41 12.59 16 11.11 16 9.5C16 5.91 13.09 3 9.5 3C5.91 3 3 5.91 3 9.5C3 13.09 5.91 16 9.5 16C11.11 16 12.59 15.41 13.73 14.43L14 14.71V15.5L19 20.49L20.49 19L15.5 14ZM9.5 14C7.01 14 5 11.99 5 9.5C5 7.01 7.01 5 9.5 5C11.99 5 14 7.01 14 9.5C14 11.99 11.99 14 9.5 14Z" fill="#6c757d"/>
+                        </svg>
+                    </div>
+                    <h3>No Professors Found</h3>
+                    <p>No professors match your search for "{{searchTerm}}"</p>
+                    <div class="search-actions">
+                        <a href="/" class="back-home-btn">Back to Home</a>
+                        <button onclick="document.querySelector('.search').focus()" class="try-again-btn">Try Another Search</button>
+                    </div>
+                </div>
+            {{/if}}
+            
+            <div class="search-actions-bottom">
+                <a href="/" class="back-home-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 20V14H14V20H19V12H22L12 3L2 12H5V20H10Z" fill="currentColor"/>
+                    </svg>
+                    Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

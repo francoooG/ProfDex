@@ -86,17 +86,14 @@ mongoose.connection.on('connected', async (err, res) => {
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 
-app.listen(PORT, () => {
-    console.log(`🚀 Server listening on port: ${PORT}`);
-    console.log(`📱 Access your application at: http://localhost:${PORT}`);
-    console.log(`🔐 Admin panel available at: http://localhost:${PORT}/admin/login`);
-});
-
 app.engine('hbs', handlebars.engine({ 
     extname: 'hbs',
     helpers: {
         divide: function(a, b) {
             return Math.round(a / b);
+        },
+        multiply: function(a, b) {
+            return a * b;
         },
         eq: function(a, b) {
             if (a == null || b == null) return false;
@@ -119,6 +116,9 @@ app.engine('hbs', handlebars.engine({
                 return options.fn(this);
             }
             return options.inverse(this);
+        },
+        'JSON.stringify': function(obj) {
+            return JSON.stringify(obj);
         }
     }
 }));
@@ -175,6 +175,15 @@ function isAdministrator(req, res, next) {
     }
 }
 
+function isModerator(req, res, next) {
+    if (req.session.user && (req.session.user.userType === 'manager' || req.session.user.userType === 'administrator')) {
+        next();
+    } 
+    else {
+        res.status(403).send('Access denied. Moderator privileges required.');
+    }
+}
+
 async function initializeAdminAccount() {
     try {
         console.log('🔍 Checking for existing administrator account...');
@@ -220,6 +229,7 @@ app.route('/').get(async (req, res) => {
     res.render(__dirname + '/views' + '/home_page.hbs', {
         data,
         userType,
+        loggedInUser: req.session.user,
         layout: false
     });
 });
@@ -235,6 +245,9 @@ app.route('/createpost')
     }
     if (req.query.error === 'validation_error') {
         errors.validation_error = true;
+    }
+    if (req.query.error === 'existing_review') {
+        errors.existing_review = true;
     }
 
     const professors = await getAllProfessorData();
@@ -269,6 +282,17 @@ app.route('/createpost')
 
         if (!professorData) {
             res.redirect('/createpost?error=professor_error');
+            return;
+        }
+
+        // Check if user already has a review for this professor
+        const existingReview = await Post.findOne({
+            op: myId,
+            to: professorData._id
+        });
+
+        if (existingReview) {
+            res.redirect('/createpost?error=existing_review');
             return;
         }
 
@@ -333,6 +357,7 @@ app.route('/editprofile')
         errors,
         courses,
         subjects,
+        userType: req.session.user.userType,
         layout: false
     });
 })
@@ -454,7 +479,7 @@ app.route('/login')
                 } else if (userType === 'professor') {
                     res.redirect('/');
                 } else if (userType === 'manager') {
-                    res.redirect('/');
+                    res.redirect('/moderator');
                 } else if (userType === 'administrator') {
                     res.redirect('/admin');
                 } else {
@@ -500,7 +525,7 @@ app.route('/login')
                     } else if (userType === 'professor') {
                         res.redirect('/');
                     } else if (userType === 'manager') {
-                        res.redirect('/');
+                        res.redirect('/moderator');
                     } else if (userType === 'administrator') {
                         res.redirect('/admin');
                     }
@@ -527,7 +552,7 @@ app.get('/logout', (req, res) => {
         if (err) {
             console.error('Error destroying session: ', err);
         }
-        res.redirect('/');
+        res.redirect('/login');
     });
 });
 
@@ -558,29 +583,51 @@ app.route('/reviewlist')
 
 app.route('/viewreview')
 .get(async (req, res) => {
-    var postId = req.query.id;
-    var postData = await getPostData(postId);
-    var professorData = await getProfessorData(new mongoose.Types.ObjectId(postData.to));
-    var commentData = await getPostCommentData(postId);
-    let commentUserTypes = [];
-    if (commentData && commentData.length) {
-        const userIds = commentData.map(c => c.op);
-        const users = await Promise.all(userIds.map(async (id) => {
-            const user = await getUserData(id);
-            return user && user.userType ? user.userType : '';
-        }));
-        commentUserTypes = users;
+    try {
+        var postId = req.query.id;
+        var postData = await getPostData(postId);
+        
+        // Check if postData exists
+        if (!postData) {
+            return res.status(404).render(__dirname + '/views' + '/error.hbs', {
+                error: 'Review not found',
+                message: 'The requested review could not be found.',
+                layout: false
+            });
+        }
+        
+        var professorData = null;
+        if (postData && postData.to) {
+            professorData = await getProfessorData(new mongoose.Types.ObjectId(postData.to));
+        }
+        var commentData = await getPostCommentData(postId);
+        let commentUserTypes = [];
+        if (commentData && commentData.length) {
+            const userIds = commentData.map(c => c.op);
+            const users = await Promise.all(userIds.map(async (id) => {
+                const user = await getUserData(id);
+                return user && user.userType ? user.userType : '';
+            }));
+            commentUserTypes = users;
+        }
+        const userType = req.session.user ? req.session.user.userType : null;
+        res.render(__dirname + '/views' + '/viewreview.hbs', {
+            professorData,
+            postData,
+            commentData,
+            commentUserTypes,
+            userType,
+            loggedInUser: req.session.user,
+            layout: false
+        });
+    } catch (error) {
+        console.error('Error in /viewreview route:', error);
+        res.status(500).render(__dirname + '/views' + '/error.hbs', {
+            error: 'Server Error',
+            message: 'An error occurred while loading the page.',
+            layout: false
+        });
     }
-    const userType = req.session.user ? req.session.user.userType : null;
-    res.render(__dirname + '/views' + '/viewreview.hbs', {
-        professorData,
-        postData,
-        commentData,
-        commentUserTypes,
-        userType,
-        loggedInUser: req.session.user,
-        layout: false
-    });
 })
 .post(async (req, res) => {
     try {
@@ -646,13 +693,37 @@ app.post('/deletecomment', isLoggedIn, async (req, res) => {
 
 app.post('/delete-review-and-comments', isLoggedIn, async (req, res) => {
     try {
-        if (!req.session.user || req.session.user.userType !== 'manager') {
+        if (!req.session.user) {
             return res.status(403).send('Forbidden');
         }
+        
         const { reviewId } = req.body;
+        
+        // Get the post data to check ownership
+        const postData = await getPostData(reviewId);
+        if (!postData) {
+            return res.status(404).send('Review not found');
+        }
+        
+        // Check if user owns the review or is a manager/administrator
+        const isOwner = postData.op && postData.op.toString() === req.session.user._id;
+        const isManager = req.session.user.userType === 'manager';
+        const isAdmin = req.session.user.userType === 'administrator';
+        
+        if (!isOwner && !isManager && !isAdmin) {
+            return res.status(403).send('Forbidden - You can only delete your own reviews');
+        }
+        
+        // Delete comments first, then the post
         await Comment.deleteMany({ post: reviewId });
         await deletePost(reviewId);
-        res.redirect('/');
+        
+        // Redirect based on user type
+        if (req.session.user.userType === 'student' || req.session.user.userType === 'professor') {
+            res.redirect('/editprofile');
+        } else {
+            res.redirect('/');
+        }
     } catch (error) {
         console.error('Error deleting review and comments:', error);
         res.status(500).send('Server error');
@@ -717,29 +788,51 @@ app.route('/reply')
 
 app.route('/viewcomments')
 .get(async (req, res) => {
-    var postId = req.query.id;
-    var postData = await getPostData(postId);
-    var professorData = await getProfessorData(new mongoose.Types.ObjectId(postData.to));
-    var commentData = await getPostCommentData(postId);
-    let commentUserTypes = [];
-    if (commentData && commentData.length) {
-        const userIds = commentData.map(c => c.op);
-        const users = await Promise.all(userIds.map(async (id) => {
-            const user = await getUserData(id);
-            return user && user.userType ? user.userType : '';
-        }));
-        commentUserTypes = users;
+    try {
+        var postId = req.query.id;
+        var postData = await getPostData(postId);
+        
+        // Check if postData exists
+        if (!postData) {
+            return res.status(404).render(__dirname + '/views' + '/error.hbs', {
+                error: 'Post not found',
+                message: 'The requested post could not be found.',
+                layout: false
+            });
+        }
+        
+        var professorData = null;
+        if (postData && postData.to) {
+            professorData = await getProfessorData(new mongoose.Types.ObjectId(postData.to));
+        }
+        var commentData = await getPostCommentData(postId);
+        let commentUserTypes = [];
+        if (commentData && commentData.length) {
+            const userIds = commentData.map(c => c.op);
+            const users = await Promise.all(userIds.map(async (id) => {
+                const user = await getUserData(id);
+                return user && user.userType ? user.userType : '';
+            }));
+            commentUserTypes = users;
+        }
+        const userType = req.session.user ? req.session.user.userType : null;
+        res.render(__dirname + '/views' + '/viewcomments.hbs', {
+            professorData,
+            postData,
+            commentData,
+            commentUserTypes,
+            userType,
+            loggedInUser: req.session.user,
+            layout: false
+        });
+    } catch (error) {
+        console.error('Error in /viewcomments route:', error);
+        res.status(500).render(__dirname + '/views' + '/error.hbs', {
+            error: 'Server Error',
+            message: 'An error occurred while loading the page.',
+            layout: false
+        });
     }
-    const userType = req.session.user ? req.session.user.userType : null;
-    res.render(__dirname + '/views' + '/viewcomments.hbs', {
-        professorData,
-        postData,
-        commentData,
-        commentUserTypes,
-        userType,
-        loggedInUser: req.session.user,
-        layout: false
-    });
 });
 
 app.route('/viewprof')
@@ -748,93 +841,78 @@ app.route('/viewprof')
         var professorId = req.query.id;
         var professorData = await getProfessorData(professorId);
         var postData = await getProfPostData(professorId);
+        
         res.render(__dirname + '/views' + '/viewprof.hbs', {
             professorData,
             postData,
+            loggedInUser: req.session.user,
+            userType: req.session.user ? req.session.user.userType : null,
             layout: false
         });
     }
-    catch {
+    catch (error) {
+        console.error('ViewProf Error:', error);
         res.redirect('/login');
     }
 })
-.get(async (req, res) => {
-    var commentId = req.query.id;
-    var commentData = await getCommentData(commentId);
-    var userData = await getUserData(commentData.op);
-    let commentUserTypes = [];
-    if (commentData) {
-        const user = await getUserData(commentData.op);
-        commentUserTypes = [user ? user.userType : null];
+.post(async (req, res) => {
+    try {
+        const { search } = req.body;
+        
+        if (!search || search.trim() === '') {
+            res.redirect('/');
+            return;
+        }
+        
+        // Search for professors with similar names
+        const searchTerm = search.trim().toLowerCase();
+        
+        // Get all professors and filter by name similarity
+        const allProfessors = await getAllProfessorData();
+        const matchingProfessors = [];
+        
+        for (const prof of allProfessors) {
+            const user = await getUserData(prof.userId);
+            if (user) {
+                const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
+                if (fullName.includes(searchTerm) || 
+                    user.firstName.toLowerCase().includes(searchTerm) || 
+                    user.lastName.toLowerCase().includes(searchTerm)) {
+                    matchingProfessors.push({
+                        professor: prof,
+                        user: user
+                    });
+                }
+            }
+        }
+        
+        // If exact match found, redirect to that professor's page
+        const exactMatch = matchingProfessors.find(p => 
+            `${p.user.firstName} ${p.user.lastName}`.toLowerCase() === searchTerm
+        );
+        
+        if (exactMatch && matchingProfessors.length === 1) {
+            res.redirect(`/viewprof?id=${exactMatch.professor._id}`);
+            return;
+        }
+        
+        // Otherwise, show search results page
+        res.render(__dirname + '/views' + '/professor_search.hbs', {
+            searchTerm: search,
+            results: matchingProfessors,
+            loggedInUser: req.session.user,
+            userType: req.session.user ? req.session.user.userType : null,
+            layout: false
+        });
+        
+    } catch (error) {
+        console.error('Search error:', error);
+        res.redirect('/');
     }
-    const userType = req.session.user ? req.session.user.userType : null;
-    res.render(__dirname + '/views' + '/reply.hbs', {
-        commentData,
-        userData,
-        commentUserTypes,
-        userType,
-        loggedInUser: req.session.user,
-        layout: false
-    });
 })
 
-app.route('/viewuser')
-.get(async (req, res) => {
-    var postId = req.query.id;
-    var postData = await getPostData(postId);
-    var professorData = await getProfessorData(new mongoose.Types.ObjectId(postData.to));
-    var commentData = await getPostCommentData(postId);
-    let commentUserTypes = [];
-    if (commentData && commentData.length) {
-        const userIds = commentData.map(c => c.op);
-        const users = await Promise.all(userIds.map(async (id) => {
-            const user = await getUserData(id);
-            return user ? user.userType : null;
-        }));
-        commentUserTypes = users;
-    }
-    const userType = req.session.user ? req.session.user.userType : null;
-    res.render(__dirname + '/views' + '/viewcomments.hbs', {
-        professorData,
-        postData,
-        commentData,
-        commentUserTypes,
-        userType,
-        loggedInUser: req.session.user,
-        layout: false
-    });
-})
-.post(isLoggedIn, async (req, res) => {
-    try {
-        const { reviewId } = req.body;
-        const myId = req.session.user._id;
-        
-        const reviewData = await getPostData(reviewId);
-        
-        if (!reviewData) {
-            res.status(404).json({ error: 'Review not found' });
-            return;
-        }
-        
-        const isManager = req.session.user && req.session.user.userType === 'manager';
-        if (reviewData.op !== myId && !isManager) {
-            res.status(403).json({ error: 'You can only delete your own reviews unless you are a manager' });
-            return;
-        }
-        
-        const result = await deletePost(reviewId);
-        
-        if (result) {
-            res.redirect('/editprofile');
-        } else {
-            res.status(500).json({ error: 'Failed to delete review' });
-        }
-    } 
-    catch (error) {
-        console.error('Error deleting review: ', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
+
+
 
 app.route('/editreview')
 .get(isLoggedIn, async (req, res) => {
@@ -886,7 +964,7 @@ app.route('/editreview')
             return;
         }
         
-        await post.updateOne(
+        await Post.updateOne(
             { _id: reviewId },
             {
                 $set: {
@@ -918,6 +996,57 @@ app.route('/help').all(async(req, res) => {
         res.render(__dirname + '/views/error.hbs', { layout: false });
     }
 })
+
+// Moderator Routes
+app.route('/moderator')
+.get(isModerator, async (req, res) => {
+    try {
+        const users = await getAllUsers();
+        const userType = req.session.user ? req.session.user.userType : null;
+        
+        res.render(__dirname + '/views' + '/moderator_dashboard.hbs', {
+            users,
+            userType,
+            layout: false
+        });
+    } catch (error) {
+        console.error('Error loading moderator dashboard: ', error);
+        res.status(500).send('Server error');
+    }
+});
+
+app.route('/moderator/users')
+.get(isModerator, async (req, res) => {
+    try {
+        const users = await getAllUsers();
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users: ', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/moderator/update-role', isModerator, async (req, res) => {
+    try {
+        const { userId, newRole } = req.body;
+        
+        // Moderators can only assign student or professor roles
+        if (newRole !== 'student' && newRole !== 'professor') {
+            return res.status(403).json({ error: 'Moderators can only assign student or professor roles' });
+        }
+        
+        const result = await updateUserRole(userId, newRole);
+        
+        if (result) {
+            res.json({ success: true, message: 'User role updated successfully' });
+        } else {
+            res.status(500).json({ error: 'Failed to update user role' });
+        }
+    } catch (error) {
+        console.error('Error updating user role: ', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 // Administrator Routes
 app.route('/admin')
@@ -1012,3 +1141,12 @@ app.route('/admin/login')
         res.redirect('/admin/login?error=invalid_credentials');
     }
 });
+
+// Start the server
+app.listen(PORT, () => {
+    console.log(`🚀 Server listening on port: ${PORT}`);
+    console.log(`📱 Access your application at: http://localhost:${PORT}`);
+    console.log(`🔐 Admin panel available at: http://localhost:${PORT}/admin/login`);
+});
+
+module.exports = app;

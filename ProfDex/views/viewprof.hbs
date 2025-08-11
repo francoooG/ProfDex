@@ -1,81 +1,199 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<link rel="stylesheet" href="viewprof.css">
-		<link rel="stylesheet" href="navbar.css">
-	</head>
+<head>
+    <title>Professor Profile - {{professorData.userId.firstName}} {{professorData.userId.lastName}}</title>
+    <link rel="stylesheet" href="viewprof.css">
+    <link rel="stylesheet" href="navbar.css">
+</head>
+<body>
+    <div id="navbar">
+        <a class="mainpage" href="/">Profdex</a>
+        <span class="navbar-buttons">
+            <a class="menu" href="/editprofile">About Me</a>
+            {{#if (ne userType 'professor')}}
+            <a class="menu" href="/createpost">Create Review</a>
+            {{/if}}
+            <a class="menu" href="/help">Help</a>
+            {{#if (eq userType 'administrator')}}
+            <a class="admin-link" href="/admin">Admin</a>
+            {{/if}}
+            {{#if (eq userType 'moderator')}}
+            <a class="moderator-link" href="/moderator">Moderator</a>
+            {{/if}}
+        </span>
+        <span class="search-buttons">
+            {{#if loggedInUser}}
+                <a class="login-button" href="/logout">Logout</a>
+            {{else}}
+                <a class="login-button" href="/login">Login</a>
+            {{/if}}
+            <form action="/viewprof" method="post">
+                <input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
+                <button type="submit" id="searchbutton"></button>
+            </form>
+        </span>
+    </div>
 
-	<body>
-			{{#with professorData}}
-			<div class="container">
+    <div class="page-container">
+        {{#with professorData}}
+        <div class="profile-header">
+            <div class="header-content">
+                <div class="professor-avatar">
+                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="#667eea"/>
+                    </svg>
+                </div>
+                <div class="professor-info">
+                    <h1>{{userId.firstName}} {{userId.lastName}}</h1>
+                    <div class="professor-meta">
+                        <span class="teacher-id">ID: {{teacherID}}</span>
+                        {{#if subjects.length}}
+                        <div class="subjects-tags">
+                            {{#each subjects}}
+                            <span class="subject-tag">{{name}}</span>
+                            {{/each}}
+                        </div>
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </div>
 
-				<div class="upper">
-					<div class="left-side">
-						<div class="user-dp"></div>
-					</div>
-		
-					<div class="right-side">
-						<div class="right-side-bio">
-							<div class="row1">
-								<div class="bio-username">
-									<h2>Name</h2>
-									<span class="profname">{{userId.firstName}} {{userId.lastName}}</span>
-								</div>
-							</div>
-							<div class="starting-term">
-								<h2>Teacher ID</h2>
-								<span class="startterm">{{teacherID}}</span>
-							</div>
-							<div class="bio-text">
-								<h2>Bio</h2>
-								<p class="bio">{{bio}}</p>
-							</div>
-							<div class="subjects">
-								<h2>Subjects</h2>
-								<p class="subjects-list">{{#each subjects}}{{name}}{{#unless @last}}, {{/unless}}{{/each}}</p>
-							</div>
-						</div>
-					</div>
-				</div>
-		{{/with}}
-		<h1 class="reviewheader">Reviews</h1>
-			{{#each postData}}
-				<div class="lower">
-					<div class="review-box">
-						<div class="review-box-upper">
-							<div class="review-dp" id="review"></div>
-								<a class="username" href="/viewuser?id={{op}}">{{opname}}</a>
-								<span class="course-term">[{{course}}]</span>
-							</div>
-						<div class="review-box-main">
-							<p class="review">{{aPost.text}}</p>
-						</div>
-					</div>
-			
-				</div>
-			{{/each}}
-		</div>
-			
-		<div id="navbar">
-				<a class="mainpage" href="/">Profdex</a>
-				<span class="navbar-buttons">
-					<a class="menu" href="/editprofile">About Me</a>
-					{{#if (and (ne userType 'professor') (ne userType 'manager'))}}
-					<a class="menu" href="/createpost">Create Review</a>
-					{{/if}}
-					<a class="menu" href="/help">Help</a>
-				</span>
-				<span class="search-buttons">
-					{{#if loggedInUser}}
-						<a class="login-button" href="/logout">Logout</a>
-					{{else}}
-						<a class="login-button" href="/login">Login</a>
-					{{/if}}
-					<form action="/viewprof" method="post">
-						<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
-						<button type="submit" id="searchbutton"></button>
-					</form>
-				</span>
-			</div>
+        <div class="main-content">
+            <div class="profile-section">
+                <div class="section-header">
+                    <h2>Profile Information</h2>
+                </div>
+                <div class="profile-details">
+                    {{#if bio}}
+                    <div class="detail-item">
+                        <div class="detail-label">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22 22 17.52 22 12 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20Z" fill="#667eea"/>
+                                <path d="M11 7H13V9H11V7ZM11 11H13V17H11V11Z" fill="#667eea"/>
+                            </svg>
+                            <span>Biography</span>
+                        </div>
+                        <div class="detail-content">
+                            <p>{{bio}}</p>
+                        </div>
+                    </div>
+                    {{/if}}
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22 22 17.52 22 12 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20Z" fill="#667eea"/>
+                                <path d="M11 7H13V9H11V7ZM11 11H13V17H11V11Z" fill="#667eea"/>
+                            </svg>
+                            <span>Teacher ID</span>
+                        </div>
+                        <div class="detail-content">
+                            <span class="teacher-id-value">{{teacherID}}</span>
+                        </div>
+                    </div>
+
+                    {{#if subjects.length}}
+                    <div class="detail-item">
+                        <div class="detail-label">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22 22 17.52 22 12 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20Z" fill="#667eea"/>
+                                <path d="M11 7H13V9H11V7ZM11 11H13V17H11V11Z" fill="#667eea"/>
+                            </svg>
+                            <span>Subjects</span>
+                        </div>
+                        <div class="detail-content">
+                            <div class="subjects-list">
+                                {{#each subjects}}
+                                <span class="subject-item">{{name}}</span>
+                                {{/each}}
+                            </div>
+                        </div>
+                    </div>
+                    {{/if}}
+                </div>
+            </div>
+
+            <div class="reviews-section">
+                <div class="section-header">
+                    <h2>Student Reviews</h2>
+                    <span class="reviews-count">{{postData.length}} review{{#unless (eq postData.length 1)}}s{{/unless}}</span>
+                </div>
+                
+                {{#if postData.length}}
+                <div class="reviews-grid">
+                    {{#each postData}}
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="reviewer-info">
+                                <div class="reviewer-avatar">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="#6c757d"/>
+                                    </svg>
+                                </div>
+                                <div class="reviewer-details">
+                                    <span class="reviewer-name">{{opname}}</span>
+                                    <span class="course-name">{{course}}</span>
+                                </div>
+                            </div>
+                            <div class="review-ratings">
+                                <div class="rating-item">
+                                    <span class="rating-label">Proficiency</span>
+                                    <div class="rating-bar">
+                                        <div class="rating-fill" style="width: {{multiply (divide proficiency 2) 20}}%"></div>
+                                    </div>
+                                    <span class="rating-value">{{divide proficiency 2}}/5</span>
+                                </div>
+                                <div class="rating-item">
+                                    <span class="rating-label">Generosity</span>
+                                    <div class="rating-bar">
+                                        <div class="rating-fill" style="width: {{multiply (divide generosity 2) 20}}%"></div>
+                                    </div>
+                                    <span class="rating-value">{{divide generosity 2}}/5</span>
+                                </div>
+                                <div class="rating-item">
+                                    <span class="rating-label">Engagement</span>
+                                    <div class="rating-bar">
+                                        <div class="rating-fill" style="width: {{multiply (divide engagement 2) 20}}%"></div>
+                                    </div>
+                                    <span class="rating-value">{{divide engagement 2}}/5</span>
+                                </div>
+                                <div class="rating-item">
+                                    <span class="rating-label">Workload</span>
+                                    <div class="rating-bar">
+                                        <div class="rating-fill" style="width: {{multiply (divide workload 2) 20}}%"></div>
+                                    </div>
+                                    <span class="rating-value">{{divide workload 2}}/5</span>
+                                </div>
+                                <div class="rating-item">
+                                    <span class="rating-label">Difficulty</span>
+                                    <div class="rating-bar">
+                                        <div class="rating-fill" style="width: {{multiply (divide difficulty 2) 20}}%"></div>
+                                    </div>
+                                    <span class="rating-value">{{divide difficulty 2}}/5</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="review-content">
+                            <p>{{aPost.text}}</p>
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+                {{else}}
+                <div class="no-reviews">
+                    <div class="no-reviews-icon">
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H6L4 18V4H20V16Z" fill="#6c757d"/>
+                        </svg>
+                    </div>
+                    <h3>No Reviews Yet</h3>
+                    <p>This professor hasn't received any reviews yet.</p>
+                </div>
+                {{/if}}
+            </div>
+        </div>
+        {{/with}}
+    </div>
 </body>
 </html>

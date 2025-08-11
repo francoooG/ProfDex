@@ -1,5 +1,9 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help - ProfDex</title>
     <link rel="stylesheet" href="navbar.css">
     <link rel="stylesheet" href="help.css">
 </head>
@@ -9,7 +13,7 @@
         <a class="mainpage" href="/">Profdex</a>
         <span class="navbar-buttons">
             <a class="menu" href="/editprofile">About Me</a>
-            {{#if (and (ne userType 'professor') (ne userType 'manager'))}}
+            {{#if (ne userType 'professor')}}
             <a class="menu" href="/createpost">Create Review</a>
             {{/if}}
             <a class="menu" href="/help">Help</a>
@@ -20,6 +24,10 @@
             {{else}}
                 <a class="login-button" href="/login">Login</a>
             {{/if}}
+            {{#if (or (eq userType 'manager') (eq userType 'administrator'))}}
+            <a class="moderator-link" href="/moderator">Moderator</a>
+            {{/if}}
+            <a class="admin-link" href="/admin/login">Admin</a>
             <form action="/viewprof" method="post">
                 <input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
                 <button type="submit" id="searchbutton"></button>
@@ -27,44 +35,72 @@
         </span>
     </div>
 
-     <div class="maincontainer">
-        <h1>Icons and Their Meanings</h1>
-        <div class="subcontainer">
-            <div class="legend">
-
-                <span id="generosity"></span>
-                <span>Generosity</span>
-
+    <div class="help-container">
+        <div class="help-header">
+            <h1>Help Center</h1>
+            <p>Understanding the rating system and icons used in ProfDex</p>
+        </div>
+        
+        <div class="help-content">
+            <div class="section-title">
+                <h2>Rating Attributes & Icons</h2>
+                <p>Learn what each icon represents when rating professors</p>
             </div>
+            
+            <div class="attributes-grid">
+                <div class="attribute-card">
+                    <div class="attribute-icon" id="generosity"></div>
+                    <div class="attribute-info">
+                        <h3>Generosity</h3>
+                        <p>How generous the professor is with grades, extensions, and help</p>
+                    </div>
+                </div>
 
-            <div class="legend">
-                
-                <span id="workload"></span>
-                <span>Workload</span>
-                
+                <div class="attribute-card">
+                    <div class="attribute-icon" id="workload"></div>
+                    <div class="attribute-info">
+                        <h3>Workload</h3>
+                        <p>The amount of assignments, readings, and work required</p>
+                    </div>
+                </div>
+
+                <div class="attribute-card">
+                    <div class="attribute-icon" id="proficiency"></div>
+                    <div class="attribute-info">
+                        <h3>Proficiency</h3>
+                        <p>How well the professor explains concepts and teaches the material</p>
+                    </div>
+                </div>
+
+                <div class="attribute-card">
+                    <div class="attribute-icon" id="difficulty"></div>
+                    <div class="attribute-info">
+                        <h3>Difficulty</h3>
+                        <p>How challenging the course content and assessments are</p>
+                    </div>
+                </div>
+
+                <div class="attribute-card">
+                    <div class="attribute-icon" id="engagement"></div>
+                    <div class="attribute-info">
+                        <h3>Engagement</h3>
+                        <p>How engaging and interactive the professor makes the class</p>
+                    </div>
+                </div>
             </div>
-
-            <div class="legend">
-
-                <span id="proficiency"></span>
-                <span>Proficiency</span>
-                
+            
+            <div class="help-footer">
+                <div class="rating-guide">
+                    <h3>Rating Scale</h3>
+                    <div class="scale-info">
+                        <span class="scale-item">1 = Poor</span>
+                        <span class="scale-item">2 = Below Average</span>
+                        <span class="scale-item">3 = Average</span>
+                        <span class="scale-item">4 = Above Average</span>
+                        <span class="scale-item">5 = Excellent</span>
+                    </div>
+                </div>
             </div>
-
-            <div class="legend">
-
-                <span id="difficulty"></span>
-                <span>Difficulty</span>
-                
-            </div>
-
-            <div class="legend">
-                
-                <span id="engagement"></span>
-                <span>Engagement</span>
-                    
-            </div>
-         
         </div>
     </div>
 

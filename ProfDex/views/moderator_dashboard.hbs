@@ -3,34 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administrator Dashboard - ProfDex</title>
-    <link rel="stylesheet" href="/admin_dashboard.css">
+    <title>Moderator Dashboard - ProfDex</title>
+    <link rel="stylesheet" href="/moderator_dashboard.css">
 </head>
 <body>
-    <div class="admin-container">
-        <header class="admin-header">
-            <h1>Administrator Dashboard</h1>
-            <div class="admin-info">
+    <div class="moderator-container">
+        <header class="moderator-header">
+            <h1>Moderator Dashboard</h1>
+            <div class="moderator-info">
                 <span>Welcome, {{loggedInUser.firstName}} {{loggedInUser.lastName}}</span>
                 <a href="/logout" class="logout-btn">Logout</a>
             </div>
         </header>
         
-        <nav class="admin-nav">
+        <nav class="moderator-nav">
             <a href="/" class="nav-link">← Back to Main Site</a>
-            <a href="/admin" class="nav-link active">Dashboard</a>
-            <a href="/admin/users" class="nav-link">User Management</a>
+            <a href="/moderator" class="nav-link active">Dashboard</a>
+            <a href="/moderator/users" class="nav-link">User Management</a>
         </nav>
         
-        <main class="admin-main">
+        <main class="moderator-main">
             <div class="dashboard-grid">
                 <div class="dashboard-card">
-                    <h3>System Overview</h3>
+                    <h3>Role Assignment Overview</h3>
                     <div class="stats">
-                        <div class="stat-item">
-                            <span class="stat-number">{{users.length}}</span>
-                            <span class="stat-label">Total Users</span>
-                        </div>
                         <div class="stat-item">
                             <span class="stat-number" id="student-count">0</span>
                             <span class="stat-label">Students</span>
@@ -40,8 +36,8 @@
                             <span class="stat-label">Professors</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-number" id="moderator-count">0</span>
-                            <span class="stat-label">Moderators</span>
+                            <span class="stat-number" id="unassigned-count">0</span>
+                            <span class="stat-label">Unassigned</span>
                         </div>
                     </div>
                 </div>
@@ -49,35 +45,18 @@
                 <div class="dashboard-card">
                     <h3>Quick Actions</h3>
                     <div class="action-buttons">
-                        <button class="action-btn" onclick="viewSystemLogs()">View Logs</button>
+                        <button class="action-btn" onclick="showUserManagement()">Manage Users</button>
                         <button class="action-btn" onclick="exportUserData()">Export Users</button>
-                    </div>
-                </div>
-                
-                <div class="dashboard-card">
-                    <h3>System Logs</h3>
-                    <div class="logs-container">
-                        <div class="log-entry">
-                            <span class="log-time">2024-01-15 10:30:00</span>
-                            <span class="log-level">INFO</span>
-                            <span class="log-message">System startup completed</span>
-                        </div>
-                        <div class="log-entry">
-                            <span class="log-time">2024-01-15 10:29:45</span>
-                            <span class="log-level">INFO</span>
-                            <span class="log-message">Admin account initialized</span>
-                        </div>
-                        <div class="log-entry">
-                            <span class="log-time">2024-01-15 10:29:30</span>
-                            <span class="log-level">INFO</span>
-                            <span class="log-message">Database connection established</span>
-                        </div>
                     </div>
                 </div>
             </div>
             
             <div class="user-management-section">
-                <h3>User Management</h3>
+                <h3>User Role Management</h3>
+                <p class="section-description">
+                    As a moderator, you can assign users as students or professors. 
+                    You cannot assign administrator or moderator roles.
+                </p>
                 <div class="table-container">
                     <table class="user-table">
                         <thead>
@@ -94,15 +73,19 @@
                                 <td>{{firstName}} {{lastName}}</td>
                                 <td>{{email}}</td>
                                 <td>
-                                    <select class="role-select" onchange="updateUserRole('{{_id}}', this.value)">
+                                    <select class="role-select" onchange="updateUserRole('{{_id}}', this.value)" {{#if (eq userType 'administrator')}}disabled{{/if}} {{#if (eq userType 'manager')}}disabled{{/if}}>
                                         <option value="student" {{#if (eq userType 'student')}}selected{{/if}}>Student</option>
                                         <option value="professor" {{#if (eq userType 'professor')}}selected{{/if}}>Professor</option>
-                                        <option value="manager" {{#if (eq userType 'manager')}}selected{{/if}}>Moderator</option>
-                                        <option value="administrator" {{#if (eq userType 'administrator')}}selected{{/if}}>Administrator</option>
+                                        <option value="manager" {{#if (eq userType 'manager')}}selected{{/if}} disabled>Moderator</option>
+                                        <option value="administrator" {{#if (eq userType 'administrator')}}selected{{/if}} disabled>Administrator</option>
                                     </select>
                                 </td>
                                 <td>
-                                    <button class="delete-btn" onclick="deleteUser('{{_id}}')">Delete</button>
+                                    <span class="role-note">
+                                        {{#if (eq userType 'administrator')}}Admin - Cannot Modify{{/if}}
+                                        {{#if (eq userType 'manager')}}Moderator - Cannot Modify{{/if}}
+                                        {{#if (or (eq userType 'student') (eq userType 'professor'))}}Role can be changed{{/if}}
+                                    </span>
                                 </td>
                             </tr>
                             {{/each}}
@@ -125,17 +108,17 @@
             const users = usersData || [];
             let studentCount = 0;
             let professorCount = 0;
-            let moderatorCount = 0;
+            let unassignedCount = 0;
             
             users.forEach(user => {
                 if (user.userType === 'student') studentCount++;
                 else if (user.userType === 'professor') professorCount++;
-                else if (user.userType === 'manager') moderatorCount++;
+                else if (user.userType === 'manager' || user.userType === 'administrator') unassignedCount++;
             });
             
             document.getElementById('student-count').textContent = studentCount;
             document.getElementById('professor-count').textContent = professorCount;
-            document.getElementById('moderator-count').textContent = moderatorCount;
+            document.getElementById('unassigned-count').textContent = unassignedCount;
         }
         
         // Initialize statistics when page loads
@@ -143,7 +126,7 @@
         
         function updateUserRole(userId, newRole) {
             if (confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
-                fetch('/admin/update-role', {
+                fetch('/moderator/update-role', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -166,42 +149,8 @@
             }
         }
         
-        function deleteUser(userId) {
-            if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-                fetch('/admin/delete-user', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ userId })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('User deleted successfully!');
-                        location.reload();
-                    } else {
-                        alert('Error deleting user: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error deleting user');
-                });
-            }
-        }
-        
         function showUserManagement() {
             document.querySelector('.user-management-section').scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        function showRoleAssignment() {
-            document.querySelector('.user-management-section').scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        function viewSystemLogs() {
-            const logsSection = document.querySelector('.logs-container');
-            logsSection.style.display = logsSection.style.display === 'none' ? 'block' : 'none';
         }
         
         function exportUserData() {

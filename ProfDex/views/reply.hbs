@@ -10,7 +10,7 @@
 		<a class="mainpage" href="/">Profdex</a>
 		<span class="navbar-buttons">
 			<a class="menu" href="/editprofile">About Me</a>
-			{{#if (and (ne userType 'professor') (ne userType 'manager'))}}
+			{{#if (ne userType 'professor')}}
 			<a class="menu" href="/createpost">Create Review</a>
 			{{/if}}
 			<a class="menu" href="/help">Help</a>
@@ -21,6 +21,10 @@
 			{{else}}
 				<a class="login-button" href="/login">Login</a>
 			{{/if}}
+			{{#if (or (eq userType 'manager') (eq userType 'administrator'))}}
+			<a class="moderator-link" href="/moderator">Moderator</a>
+			{{/if}}
+			<a class="admin-link" href="/admin/login">Admin</a>
 			<form action="/viewprof" method="post">
 				<input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
 				<button type="submit" id="searchbutton"></button>
@@ -30,7 +34,7 @@
 	
 	<div id="filter">
 		{{#with userData}}
-			<a id="professorname" href="/viewuser?id={{_id}}" style="position: absolute; margin-top: 20px; margin-left: 100px;">Replying to: {{aUser.username}}</a>
+			<span id="professorname" style="position: absolute; margin-top: 20px; margin-left: 100px;">Replying to: {{aUser.username}}</span>
 		{{/with}}
 	</div>
 
@@ -38,10 +42,10 @@
 		{{#with commentData}}
 			<div class="primary-comment" style="margin-left:100px; margin-top:130px;">
 				<div class="comment-header">
-					<a class="comment-profile" href="/viewuser?id={{op}}">
-					<a class="comment-username" href="/viewuser?id={{op}}">{{opname}}
+					<span class="comment-profile">
+					<span class="comment-username">{{opname}}</span>
 					{{#if (eq ../commentUserTypes.[@index] 'manager')}}<span style="color: red; font-weight: bold; margin-left: 6px;">Manager</span>{{/if}}
-					</a>
+					</span>
 				</div>
 				<a class="text-comment">@{{toname}} ({{to}}) - {{date}} <br><br> {{aComment.text}}</a>
 			</div>
