@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator Login - ProfDex</title>
+    <link rel="stylesheet" href="/admin_login.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-box">
+            <div class="header">
+                <h1>Administrator Access</h1>
+                <p>Secure login for system administrators</p>
+            </div>
+            
+            {{#if errors.invalid_credentials}}
+            <div class="error-message">
+                Invalid administrator credentials. Please try again.
+            </div>
+            {{/if}}
+            
+            <form method="POST" action="/admin/login" class="login-form">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <button type="submit" class="login-btn">Login as Administrator</button>
+            </form>
+            
+            <div class="footer">
+                <a href="/" class="back-link">← Back to Main Site</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

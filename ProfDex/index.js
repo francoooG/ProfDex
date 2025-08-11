@@ -25,6 +25,12 @@ const {
 
     getManagerData,
     createManager,
+    
+    getAdministratorData,
+    createAdministrator,
+    getAllUsers,
+    deleteUser,
+    updateUserRole,
 
     getUserPostData,
     getPostData,
@@ -41,6 +47,7 @@ const {
     Student,
     Professor,
     Manager,
+    Administrator,
     Course,
     Subject,
     Post,
@@ -60,17 +67,30 @@ mongoose.connect(process.env.MONGODB_CONNECT_URI, {
 });
 
 mongoose.connection.on('error', (err) => {
-    console.log('err', err);
+    console.error('❌ MongoDB connection error:', err);
+    console.error('   Please check your MONGODB_CONNECT_URI environment variable');
 });
 
-mongoose.connection.on('connected', (err, res) => {
+mongoose.connection.on('connected', async (err, res) => {
     console.log('MongoDB connected successfully!');
+    
+    // Initialize admin account if it doesn't exist
+    try {
+        await initializeAdminAccount();
+        console.log('Admin account initialization completed');
+    } catch (error) {
+        console.error('Error initializing admin account:', error);
+    }
 });
 
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 
-app.listen(PORT, () => console.log(`Server listening on port: ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`🚀 Server listening on port: ${PORT}`);
+    console.log(`📱 Access your application at: http://localhost:${PORT}`);
+    console.log(`🔐 Admin panel available at: http://localhost:${PORT}/admin/login`);
+});
 
 app.engine('hbs', handlebars.engine({ 
     extname: 'hbs',
@@ -143,6 +163,54 @@ function isLoggedIn(req, res, next) {
     } 
     else {
         res.redirect('/login');
+    }
+}
+
+function isAdministrator(req, res, next) {
+    if (req.session.user && req.session.user.userType === 'administrator') {
+        next();
+    } 
+    else {
+        res.status(403).send('Access denied. Administrator privileges required.');
+    }
+}
+
+async function initializeAdminAccount() {
+    try {
+        console.log('🔍 Checking for existing administrator account...');
+        
+        // Check if admin already exists
+        const existingAdmin = await User.findOne({ userType: 'administrator' });
+        
+        if (!existingAdmin) {
+            console.log('📝 No administrator found. Creating default admin account...');
+            
+            // Create admin user
+            const hashedPassword = await bcrypt.hash('admin123', saltRounds);
+            const adminUser = new User({
+                firstName: 'Admin',
+                lastName: 'User',
+                email: 'admin@profdex.com',
+                password: hashedPassword,
+                userType: 'administrator'
+            });
+            
+            const savedAdmin = await adminUser.save();
+            
+            // Create administrator record
+            await createAdministrator(savedAdmin._id);
+            
+            console.log('✅ Admin account created successfully!');
+            console.log('   📧 Email: admin@profdex.com');
+            console.log('   🔑 Password: admin123');
+            console.log('   ⚠️  Remember to change the password after first login!');
+        } else {
+            console.log('ℹ️  Administrator account already exists');
+        }
+    } catch (error) {
+        console.error('❌ Error creating admin account:', error);
+        console.error('   This may affect administrator functionality');
+        // Don't throw error to prevent app from crashing
     }
 }
 
@@ -387,6 +455,8 @@ app.route('/login')
                     res.redirect('/');
                 } else if (userType === 'manager') {
                     res.redirect('/');
+                } else if (userType === 'administrator') {
+                    res.redirect('/admin');
                 } else {
                     res.redirect('/login?error=invalid_credentials');
                 }
@@ -431,6 +501,8 @@ app.route('/login')
                         res.redirect('/');
                     } else if (userType === 'manager') {
                         res.redirect('/');
+                    } else if (userType === 'administrator') {
+                        res.redirect('/admin');
                     }
                 } else {
                     res.redirect('/login?error=invalid_credentials');
@@ -846,3 +918,97 @@ app.route('/help').all(async(req, res) => {
         res.render(__dirname + '/views/error.hbs', { layout: false });
     }
 })
+
+// Administrator Routes
+app.route('/admin')
+.get(isAdministrator, async (req, res) => {
+    try {
+        const users = await getAllUsers();
+        const userType = req.session.user ? req.session.user.userType : null;
+        
+        res.render(__dirname + '/views' + '/admin_dashboard.hbs', {
+            users,
+            userType,
+            layout: false
+        });
+    } catch (error) {
+        console.error('Error loading admin dashboard: ', error);
+        res.status(500).send('Server error');
+    }
+});
+
+app.route('/admin/users')
+.get(isAdministrator, async (req, res) => {
+    try {
+        const users = await getAllUsers();
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users: ', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/admin/delete-user', isAdministrator, async (req, res) => {
+    try {
+        const { userId } = req.body;
+        const result = await deleteUser(userId);
+        
+        if (result) {
+            res.json({ success: true, message: 'User deleted successfully' });
+        } else {
+            res.status(500).json({ error: 'Failed to delete user' });
+        }
+    } catch (error) {
+        console.error('Error deleting user: ', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/admin/update-role', isAdministrator, async (req, res) => {
+    try {
+        const { userId, newRole } = req.body;
+        const result = await updateUserRole(userId, newRole);
+        
+        if (result) {
+            res.json({ success: true, message: 'User role updated successfully' });
+        } else {
+            res.status(500).json({ error: 'Failed to update user role' });
+        }
+    } catch (error) {
+        console.error('Error updating user role: ', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.route('/admin/login')
+.get(async (req, res) => {
+    const errors = {};
+    if (req.query.error === 'invalid_credentials') {
+        errors.invalid_credentials = true;
+    }
+    
+    res.render(__dirname + '/views' + '/admin_login.hbs', { 
+        layout: false, 
+        errors
+    });
+})
+.post(async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        if (!email || !password) {
+            return res.redirect('/admin/login?error=invalid_credentials');
+        }
+        
+        const loggedInUser = await loginUser(email, password, req);
+        
+        if (loggedInUser && loggedInUser.userType === 'administrator') {
+            res.redirect('/admin');
+        } else {
+            res.redirect('/admin/login?error=invalid_credentials');
+        }
+    } catch (error) {
+        console.error('Error during admin login: ', error);
+        res.redirect('/admin/login?error=invalid_credentials');
+    }
+});
