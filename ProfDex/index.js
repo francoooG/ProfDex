@@ -117,9 +117,7 @@ app.engine('hbs', handlebars.engine({
             }
             return options.inverse(this);
         },
-        'JSON.stringify': function(obj) {
-            return JSON.stringify(obj);
-        }
+
     }
 }));
 app.set('view engine', 'hbs');
@@ -1055,9 +1053,17 @@ app.route('/admin')
         const users = await getAllUsers();
         const userType = req.session.user ? req.session.user.userType : null;
         
+        // Calculate user counts for statistics
+        const studentCount = users.filter(user => user.userType === 'student').length;
+        const professorCount = users.filter(user => user.userType === 'professor').length;
+        const moderatorCount = users.filter(user => user.userType === 'manager').length;
+        
         res.render(__dirname + '/views' + '/admin_dashboard.hbs', {
             users,
             userType,
+            studentCount,
+            professorCount,
+            moderatorCount,
             layout: false
         });
     } catch (error) {
