@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator Dashboard - ProfDex</title>
+    <link rel="stylesheet" href="/admin_dashboard.css">
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1>Administrator Dashboard</h1>
+            <div class="admin-info">
+                <span>Welcome, {{loggedInUser.firstName}} {{loggedInUser.lastName}}</span>
+                <a href="/logout" class="logout-btn">Logout</a>
+            </div>
+        </header>
+        
+        <nav class="admin-nav">
+            <a href="/" class="nav-link">← Back to Main Site</a>
+            <a href="/admin" class="nav-link active">Dashboard</a>
+            <a href="/admin/users" class="nav-link">User Management</a>
+        </nav>
+        
+        <main class="admin-main">
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <h3>System Overview</h3>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-number">{{users.length}}</span>
+                            <span class="stat-label">Total Users</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{#each users}}{{#if (eq userType 'student')}}{{/if}}{{/each}}</span>
+                            <span class="stat-label">Students</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{#each users}}{{#if (eq userType 'professor')}}{{/if}}{{/each}}</span>
+                            <span class="stat-label">Professors</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{#each users}}{{#if (eq userType 'manager')}}{{/if}}{{/each}}</span>
+                            <span class="stat-label">Moderators</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h3>Quick Actions</h3>
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="viewSystemLogs()">View Logs</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="user-management-section">
+                <h3>User Management</h3>
+                <div class="table-container">
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Current Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{#each users}}
+                            <tr data-user-id="{{_id}}">
+                                <td>{{firstName}} {{lastName}}</td>
+                                <td>{{email}}</td>
+                                <td>
+                                    <select class="role-select" onchange="updateUserRole('{{_id}}', this.value)">
+                                        <option value="student" {{#if (eq userType 'student')}}selected{{/if}}>Student</option>
+                                        <option value="professor" {{#if (eq userType 'professor')}}selected{{/if}}>Professor</option>
+                                        <option value="manager" {{#if (eq userType 'manager')}}selected{{/if}}>Moderator</option>
+                                        <option value="administrator" {{#if (eq userType 'administrator')}}selected{{/if}}>Administrator</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <button class="delete-btn" onclick="deleteUser('{{_id}}')">Delete</button>
+                                </td>
+                            </tr>
+                            {{/each}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        function updateUserRole(userId, newRole) {
+            if (confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
+                fetch('/admin/update-role', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId, newRole })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('User role updated successfully!');
+                        location.reload();
+                    } else {
+                        alert('Error updating user role: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error updating user role');
+                });
+            }
+        }
+        
+        function deleteUser(userId) {
+            if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                fetch('/admin/delete-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('User deleted successfully!');
+                        location.reload();
+                    } else {
+                        alert('Error deleting user: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting user');
+                });
+            }
+        }
+        
+        function showUserManagement() {
+            document.querySelector('.user-management-section').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function showRoleAssignment() {
+            document.querySelector('.user-management-section').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function viewSystemLogs() {
+            alert('System logs feature coming soon!');
+        }
+    </script>
+</body>
+</html> 

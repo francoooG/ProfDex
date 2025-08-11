@@ -139,3 +139,23 @@ a.menu:hover {
 .login-button:hover {
     background-color: rgb(74, 222, 74);
 }
+
+.admin-link {
+    display: absolute;
+    text-align: center;
+    padding: 1px 1px 1px;
+    margin: 0;
+    text-decoration: none;
+    height: 20px;
+    width: 60px;
+    margin-right: 15px;
+    border: none;
+    border-radius: 5px;
+    background-color: #dc3545;
+    color: white;
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.admin-link:hover {
+    background-color: #c82333;
+}

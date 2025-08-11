@@ -24,7 +24,7 @@ var userSchema = new Schema({
     },
     userType: {
         type: String,
-        enum: ['student', 'professor', 'manager'],
+        enum: ['student', 'professor', 'manager', 'administrator'],
         required: true
     }
 });
@@ -119,6 +119,21 @@ var managerSchema = new Schema({
     }
 });
 var Manager = mongoose.model("Managers", managerSchema);
+
+var administratorSchema = new Schema({
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Users',
+        required: true
+    },
+    permissions: {
+        canAssignModerators: { type: Boolean, default: true },
+        canDeleteUsers: { type: Boolean, default: true },
+        canManageRoles: { type: Boolean, default: true },
+        canViewLogs: { type: Boolean, default: true }
+    }
+});
+var Administrator = mongoose.model("Administrators", administratorSchema);
 
 var postSchema = new Schema({
     aPost: {
@@ -353,6 +368,92 @@ async function createManager(userId) {
     }
 }
 
+async function getAdministratorData(userId) {
+    try {
+        const administrator = await Administrator.findOne({ userId: userId }).populate('userId').lean();
+        return administrator;
+    } 
+    catch (error) {
+        console.error('Error finding administrator: ', error);
+        return null;
+    }
+}
+
+async function createAdministrator(userId) {
+    try {
+        const administrator = new Administrator({
+            userId: userId
+        });
+        await administrator.save();
+        return administrator;
+    } 
+    catch (error) {
+        console.error('Error creating administrator: ', error);
+        return null;
+    }
+}
+
+async function getAllUsers() {
+    try {
+        const users = await User.find().lean();
+        return users;
+    } 
+    catch (error) {
+        console.error('Error finding all users: ', error);
+        return null;
+    }
+}
+
+async function deleteUser(userId) {
+    try {
+        // Delete related data first
+        await Student.deleteMany({ userId: userId });
+        await Professor.deleteMany({ userId: userId });
+        await Manager.deleteMany({ userId: userId });
+        await Administrator.deleteMany({ userId: userId });
+        await Post.deleteMany({ op: userId });
+        await Comment.deleteMany({ op: userId });
+        
+        // Finally delete the user
+        const result = await User.findByIdAndDelete(userId);
+        return result;
+    } 
+    catch (error) {
+        console.error('Error deleting user: ', error);
+        return null;
+    }
+}
+
+async function updateUserRole(userId, newRole) {
+    try {
+        // Remove from all role collections first
+        await Student.deleteMany({ userId: userId });
+        await Professor.deleteMany({ userId: userId });
+        await Manager.deleteMany({ userId: userId });
+        await Administrator.deleteMany({ userId: userId });
+        
+        // Update user type
+        await User.updateOne({ _id: userId }, { $set: { userType: newRole } });
+        
+        // Create new role-specific record
+        if (newRole === 'student') {
+            return await createStudent(userId, 'TEMP_ID', null, '');
+        } else if (newRole === 'professor') {
+            return await createProfessor(userId, 'TEMP_ID', [], '');
+        } else if (newRole === 'manager') {
+            return await createManager(userId);
+        } else if (newRole === 'administrator') {
+            return await createAdministrator(userId);
+        }
+        
+        return null;
+    } 
+    catch (error) {
+        console.error('Error updating user role: ', error);
+        return null;
+    }
+}
+
 async function getProfPostData(id) {
     try {
         const review = await Post.find({to: id}).lean();
@@ -449,6 +550,11 @@ async function loginUser(email, password, req) {
             if (managerData) {
                 userData.managerData = managerData;
             }
+        } else if (existingUser.userType === 'administrator') {
+            const administratorData = await getAdministratorData(existingUser._id);
+            if (administratorData) {
+                userData.administratorData = administratorData;
+            }
         }
 
         req.session.user = {
@@ -503,6 +609,8 @@ async function registerUser(firstName, lastName, email, password, userType, addi
             );
         } else if (userType === 'manager') {
             specificUserData = await createManager(user._id);
+        } else if (userType === 'administrator') {
+            specificUserData = await createAdministrator(user._id);
         }
 
         return { 
@@ -540,6 +648,12 @@ module.exports = {
     getManagerData,
     createManager,
     
+    getAdministratorData,
+    createAdministrator,
+    getAllUsers,
+    deleteUser,
+    updateUserRole,
+    
     getUserPostData,
     getPostData,
     getProfPostData,
@@ -555,6 +669,7 @@ module.exports = {
     Student,
     Professor,
     Manager,
+    Administrator,
     Course,
     Subject,
     Post,
