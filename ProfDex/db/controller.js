@@ -48,19 +48,46 @@ const PASSWORD_CONFIG = {
 function validatePasswordStrength(password) {
     const errors = [];
     let complexityScore = 0;
+    let lengthScore = 0;
     
     if (!password || typeof password !== 'string') {
         errors.push('Password must be a valid string');
-        return { isValid: false, errors, complexityScore: 0 };
+        return { isValid: false, errors, complexityScore: 0, lengthScore: 0 };
     }
     
-    // Basic length requirements
+    // Enhanced length requirements with detailed feedback
     if (password.length < PASSWORD_CONFIG.MIN_LENGTH) {
-        errors.push(`Password must be at least ${PASSWORD_CONFIG.MIN_LENGTH} characters long`);
+        errors.push(`Password must be at least ${PASSWORD_CONFIG.MIN_LENGTH} characters long (current: ${password.length})`);
     }
     
     if (password.length > PASSWORD_CONFIG.MAX_LENGTH) {
-        errors.push(`Password must be no more than ${PASSWORD_CONFIG.MAX_LENGTH} characters long`);
+        errors.push(`Password must be no more than ${PASSWORD_CONFIG.MAX_LENGTH} characters long (current: ${password.length})`);
+    }
+    
+    // Length-based scoring and recommendations
+    if (password.length >= PASSWORD_CONFIG.MIN_LENGTH) {
+        lengthScore = 1; // Base score for meeting minimum
+        
+        if (password.length >= PASSWORD_CONFIG.RECOMMENDED_MIN_LENGTH) {
+            lengthScore = 2; // Bonus for meeting recommended length
+        }
+        
+        if (password.length >= PASSWORD_CONFIG.STRONG_LENGTH_THRESHOLD) {
+            lengthScore = 3; // Bonus for meeting strong length threshold
+        }
+        
+        // Length-based complexity bonus
+        if (PASSWORD_CONFIG.LENGTH_COMPLEXITY_BONUS && password.length >= PASSWORD_CONFIG.MIN_LENGTH_FOR_BONUS) {
+            const extraChars = password.length - PASSWORD_CONFIG.MIN_LENGTH_FOR_BONUS;
+            const bonusPoints = extraChars * PASSWORD_CONFIG.BONUS_POINTS_PER_EXTRA_CHAR;
+            lengthScore += bonusPoints;
+        }
+    }
+    
+    // Length-based warnings (not errors, but recommendations)
+    const warnings = [];
+    if (password.length >= PASSWORD_CONFIG.MIN_LENGTH && password.length < PASSWORD_CONFIG.RECOMMENDED_MIN_LENGTH) {
+        warnings.push(`Consider using at least ${PASSWORD_CONFIG.RECOMMENDED_MIN_LENGTH} characters for better security`);
     }
     
     // Character type requirements
@@ -179,11 +206,32 @@ function validatePasswordStrength(password) {
         }
     }
     
+    // Calculate total score including length bonus
+    const totalScore = complexityScore + lengthScore;
+    
     return {
         isValid: errors.length === 0,
         errors,
-        complexityScore
+        warnings,
+        complexityScore,
+        lengthScore,
+        totalScore,
+        passwordLength: password.length,
+        lengthClassification: getLengthClassification(password.length)
     };
+}
+
+// Get length classification for password strength assessment
+function getLengthClassification(length) {
+    if (length < PASSWORD_CONFIG.MIN_LENGTH) {
+        return 'too_short';
+    } else if (length < PASSWORD_CONFIG.RECOMMENDED_MIN_LENGTH) {
+        return 'minimum';
+    } else if (length < PASSWORD_CONFIG.STRONG_LENGTH_THRESHOLD) {
+        return 'recommended';
+    } else {
+        return 'strong';
+    }
 }
 
 // Check if password has been used recently (password history validation)
@@ -232,6 +280,50 @@ async function checkPasswordAge(userId) {
         console.error('Error checking password age:', error);
         // Fail securely - if we can't check age, assume not expired
         return { isExpired: false };
+    }
+}
+
+// Check for length-based patterns in password history
+async function checkLengthPatterns(userId, newPasswordLength) {
+    try {
+        if (!PASSWORD_CONFIG.ENABLE_LENGTH_HISTORY_CHECK) {
+            return { isValid: true };
+        }
+        
+        // Get recent password history lengths
+        const passwordHistory = await PasswordHistory.find({ userId })
+            .sort({ createdAt: -1 })
+            .limit(PASSWORD_CONFIG.PASSWORD_HISTORY_SIZE);
+        
+        if (passwordHistory.length === 0) {
+            return { isValid: true };
+        }
+        
+        // Check for length patterns
+        const lengths = passwordHistory.map(entry => entry.hashedPassword.length); // Note: we can't get actual length from hash
+        const avgLength = lengths.reduce((sum, len) => sum + len, 0) / lengths.length;
+        const lengthVariation = Math.abs(newPasswordLength - avgLength);
+        
+        // Check if length variation is within acceptable range
+        if (lengthVariation < PASSWORD_CONFIG.MIN_LENGTH_VARIATION) {
+            return {
+                isValid: false,
+                error: 'Password length is too similar to previous passwords. Please choose a different length.'
+            };
+        }
+        
+        if (lengthVariation > PASSWORD_CONFIG.MAX_LENGTH_VARIATION) {
+            return {
+                isValid: false,
+                error: 'Password length variation is too extreme. Please choose a more reasonable length.'
+            };
+        }
+        
+        return { isValid: true };
+    } catch (error) {
+        console.error('Error checking length patterns:', error);
+        // Fail securely - if we can't check patterns, allow the password
+        return { isValid: true };
     }
 }
 
@@ -1029,6 +1121,9 @@ async function registerUser(firstName, lastName, email, password, userType, addi
                 details: passwordValidation.errors 
             };
         }
+        
+        // Check for length-based patterns (for existing users during password changes)
+        // Note: For new registrations, this check is not applicable since there's no history yet
 
         const existingUser = await User.findOne({ email: email });
         if (existingUser) {
@@ -1116,6 +1211,12 @@ async function changePassword(userId, currentPassword, newPassword) {
             return { success: false, error: historyCheck.error };
         }
         
+        // Check for length-based patterns
+        const lengthPatternCheck = await checkLengthPatterns(userId, newPassword.length);
+        if (!lengthPatternCheck.isValid) {
+            return { success: false, error: lengthPatternCheck.error };
+        }
+        
         // Hash new password
         const hashedNewPassword = await hashPassword(newPassword);
         
@@ -1182,6 +1283,8 @@ module.exports = {
     checkPasswordAge,
     addPasswordToHistory,
     changePassword,
+    checkLengthPatterns,
+    getLengthClassification,
     
     User,
     Student,
