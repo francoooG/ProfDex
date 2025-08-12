@@ -177,6 +177,8 @@ function isLoggedIn(req, res, next) {
         next();
     } 
     else {
+        // Store the original URL to redirect back after login
+        req.session.returnTo = req.originalUrl;
         res.redirect('/login');
     }
 }
@@ -186,7 +188,9 @@ function isAdministrator(req, res, next) {
         next();
     } 
     else {
-        res.status(403).send('Access denied. Administrator privileges required.');
+        // Store the original URL to redirect back after login
+        req.session.returnTo = req.originalUrl;
+        res.redirect('/admin/login');
     }
 }
 
@@ -195,7 +199,9 @@ function isModerator(req, res, next) {
         next();
     } 
     else {
-        res.status(403).send('Access denied. Moderator privileges required.');
+        // Store the original URL to redirect back after login
+        req.session.returnTo = req.originalUrl;
+        res.redirect('/login');
     }
 }
 
@@ -238,7 +244,7 @@ async function initializeAdminAccount() {
     }
 }
 
-app.route('/').get(async (req, res) => {
+app.route('/').get(isLoggedIn, async (req, res) => {
     var data = await getAllProfessorData();
     const userType = req.session.user ? req.session.user.userType : null;
     res.render(__dirname + '/views' + '/home_page.hbs', {
@@ -498,16 +504,23 @@ app.route('/login')
 
             if (loggedInUser) {
                 const userType = loggedInUser.userType;
-                if (userType === 'student') {
-                    res.redirect('/editprofile');
-                } else if (userType === 'professor') {
-                    res.redirect('/');
-                } else if (userType === 'manager') {
-                    res.redirect('/moderator');
-                } else if (userType === 'administrator') {
-                    res.redirect('/admin');
+                // Redirect to original destination if available, otherwise to role-specific page
+                const returnTo = req.session.returnTo;
+                if (returnTo && returnTo !== '/login') {
+                    delete req.session.returnTo;
+                    res.redirect(returnTo);
                 } else {
-                    res.redirect('/login?error=invalid_credentials');
+                    if (userType === 'student') {
+                        res.redirect('/editprofile');
+                    } else if (userType === 'professor') {
+                        res.redirect('/');
+                    } else if (userType === 'manager') {
+                        res.redirect('/moderator');
+                    } else if (userType === 'administrator') {
+                        res.redirect('/admin');
+                    } else {
+                        res.redirect('/login?error=invalid_credentials');
+                    }
                 }
             } 
             else {
@@ -544,14 +557,21 @@ app.route('/login')
             if (result.success) {
                 const loggedInUser = await loginUser(registerEmail, registerPassword, req);
                 if (loggedInUser) {
-                    if (userType === 'student') {
-                        res.redirect('/editprofile');
-                    } else if (userType === 'professor') {
-                        res.redirect('/');
-                    } else if (userType === 'manager') {
-                        res.redirect('/moderator');
-                    } else if (userType === 'administrator') {
-                        res.redirect('/admin');
+                    // Redirect to original destination if available, otherwise to role-specific page
+                    const returnTo = req.session.returnTo;
+                    if (returnTo && returnTo !== '/login') {
+                        delete req.session.returnTo;
+                        res.redirect(returnTo);
+                    } else {
+                        if (userType === 'student') {
+                            res.redirect('/editprofile');
+                        } else if (userType === 'professor') {
+                            res.redirect('/');
+                        } else if (userType === 'manager') {
+                            res.redirect('/moderator');
+                        } else if (userType === 'administrator') {
+                            res.redirect('/admin');
+                        }
                     }
                 } else {
                     res.redirect('/login?error=invalid_credentials');
@@ -571,7 +591,7 @@ app.route('/login')
     }
 });
 
-app.get('/logout', (req, res) => {
+app.get('/logout', isLoggedIn, (req, res) => {
     req.session.destroy(err => {
         if (err) {
             console.error('Error destroying session: ', err);
@@ -581,7 +601,7 @@ app.get('/logout', (req, res) => {
 });
 
 app.route('/reviewlist')
-.get(async (req, res) => {
+.get(isLoggedIn, async (req, res) => {
     var professorId = req.query.id;
     console.log('ReviewList - Professor ID:', professorId);
     
@@ -620,7 +640,7 @@ app.route('/reviewlist')
 });
 
 app.route('/viewreview')
-.get(async (req, res) => {
+.get(isLoggedIn, async (req, res) => {
     try {
         var postId = req.query.id;
         var postData = await getPostData(postId);
@@ -667,7 +687,7 @@ app.route('/viewreview')
         });
     }
 })
-.post(async (req, res) => {
+.post(isLoggedIn, async (req, res) => {
     try {
         var myId = req.session.user._id;
         var userData = await getUserData(myId);
@@ -825,7 +845,7 @@ app.route('/reply')
 });
 
 app.route('/viewcomments')
-.get(async (req, res) => {
+.get(isLoggedIn, async (req, res) => {
     try {
         var postId = req.query.id;
         var postData = await getPostData(postId);
@@ -874,7 +894,7 @@ app.route('/viewcomments')
 });
 
 app.route('/viewprof')
-.get(async (req, res) => {
+.get(isLoggedIn, async (req, res) => {
     try {
         var professorId = req.query.id;
         console.log('ViewProf - Professor ID:', professorId);
@@ -916,7 +936,7 @@ app.route('/viewprof')
         res.redirect('/login');
     }
 })
-.post(async (req, res) => {
+.post(isLoggedIn, async (req, res) => {
     try {
         const { search } = req.body;
         
@@ -1047,7 +1067,7 @@ app.route('/editreview')
     }
 });
 
-app.route('/help').all(async(req, res) => {
+app.route('/help').all(isLoggedIn, async(req, res) => {
     try{
 
         res.render(__dirname + '/views' + '/help.hbs', { layout: false });
@@ -1240,6 +1260,11 @@ app.route('/admin/login')
         errors.invalid_credentials = true;
     }
     
+    // Store the original URL to redirect back after login
+    if (req.query.returnTo) {
+        req.session.returnTo = req.query.returnTo;
+    }
+    
     res.render(__dirname + '/views' + '/admin_login.hbs', { 
         layout: false, 
         errors
@@ -1256,7 +1281,14 @@ app.route('/admin/login')
         const loggedInUser = await loginUser(email, password, req);
         
         if (loggedInUser && loggedInUser.userType === 'administrator') {
-            res.redirect('/admin');
+            // Redirect to original destination if available, otherwise to admin dashboard
+            const returnTo = req.session.returnTo;
+            if (returnTo && returnTo !== '/admin/login') {
+                delete req.session.returnTo;
+                res.redirect(returnTo);
+            } else {
+                res.redirect('/admin');
+            }
         } else {
             res.redirect('/admin/login?error=invalid_credentials');
         }
