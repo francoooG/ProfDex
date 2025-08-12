@@ -710,7 +710,7 @@ async function loginUser(email, password, req) {
         
         // Check password length (reasonable limits)
         if (password.length < 1 || password.length > 128) {
-            console.log('Login attempt with invalid password length');
+            console.log('Login attempt with invalid input format');
             return null;
         }
 
@@ -731,14 +731,14 @@ async function loginUser(email, password, req) {
         // Use enhanced password verification with pepper
         const passwordMatch = await verifyPassword(password, existingUser.password);
         if (!passwordMatch) {
-            console.log('Password mismatch for user:', existingUser.email);
+            console.log('Authentication failed for user account');
             return null;
         }
 
         // Validate user type is in allowed enum
         const allowedUserTypes = ['student', 'professor', 'manager', 'administrator'];
         if (!allowedUserTypes.includes(existingUser.userType)) {
-            console.log('Invalid user type detected:', existingUser.userType);
+            console.log('Authentication failed - invalid account configuration');
             return null;
         }
 

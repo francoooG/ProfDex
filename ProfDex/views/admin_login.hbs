@@ -14,9 +14,9 @@
                 <p>Secure login for system administrators</p>
             </div>
             
-            {{#if errors.invalid_credentials}}
+            {{#if errors.authentication_failed}}
             <div class="error-message">
-                Invalid administrator credentials. Please try again.
+                Invalid username and/or password.
             </div>
             {{/if}}
             

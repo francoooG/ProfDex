@@ -546,8 +546,8 @@ app.route('/login')
     if (req.query.error === 'password_mismatch') {
         errors.password_mismatch = true;
     }
-    if (req.query.error === 'invalid_credentials') {
-        errors.invalid_credentials = true;
+    if (req.query.error === 'authentication_failed') {
+        errors.authentication_failed = true;
     }
     if (req.query.error === 'registration_error') {
         errors.registration_error = true;
@@ -555,6 +555,9 @@ app.route('/login')
     if (req.query.error === 'password_validation') {
         errors.password_validation = true;
         errors.password_validation_details = req.query.details ? decodeURIComponent(req.query.details) : '';
+    }
+    if (req.query.error === 'invalid_data') {
+        errors.invalid_data = true;
     }
     
     const courses = await getAllCourses();
@@ -603,12 +606,12 @@ app.route('/login')
                     } else if (userType === 'administrator') {
                         res.redirect('/admin');
                     } else {
-                        res.redirect('/login?error=invalid_credentials');
+                        res.redirect('/login?error=authentication_failed');
                     }
                 }
             } 
             else {
-                res.redirect('/login?error=invalid_credentials');
+                res.redirect('/login?error=authentication_failed');
                 return;
             }
         } 
@@ -658,7 +661,7 @@ app.route('/login')
                         }
                     }
                 } else {
-                    res.redirect('/login?error=invalid_credentials');
+                    res.redirect('/login?error=authentication_failed');
                 }
             } else {
                 // Handle specific password validation errors
@@ -1346,8 +1349,8 @@ app.post('/admin/update-role', isAdministrator, async (req, res) => {
 app.route('/admin/login')
 .get(async (req, res) => {
     const errors = {};
-    if (req.query.error === 'invalid_credentials') {
-        errors.invalid_credentials = true;
+    if (req.query.error === 'authentication_failed') {
+        errors.authentication_failed = true;
     }
     
     // Store the original URL to redirect back after login
@@ -1365,7 +1368,7 @@ app.route('/admin/login')
         const { email, password } = req.body;
         
         if (!email || !password) {
-            return res.redirect('/admin/login?error=invalid_credentials');
+            return res.redirect('/admin/login?error=authentication_failed');
         }
         
         const loggedInUser = await loginUser(email, password, req);
@@ -1380,11 +1383,11 @@ app.route('/admin/login')
                 res.redirect('/admin');
             }
         } else {
-            res.redirect('/admin/login?error=invalid_credentials');
+            res.redirect('/admin/login?error=authentication_failed');
         }
     } catch (error) {
         console.error('Error during admin login: ', error);
-        res.redirect('/admin/login?error=invalid_credentials');
+        res.redirect('/admin/login?error=authentication_failed');
     }
 });
 

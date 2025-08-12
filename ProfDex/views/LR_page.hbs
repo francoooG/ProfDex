@@ -17,14 +17,17 @@
                 {{#if errors.password_mismatch}}
                     <b class="password-error">Passwords do not match.</b>
                 {{/if}}
-                {{#if errors.invalid_credentials}}
-                    <b class="credentials-error">Credentials are incorrect.</b>
+                {{#if errors.authentication_failed}}
+                    <b class="credentials-error">Invalid username and/or password.</b>
                 {{/if}}
                 {{#if errors.registration_error}}
                     <b class="credentials-error">Registration failed. Please check your information.</b>
                 {{/if}}
                 {{#if errors.password_validation}}
                     <b class="credentials-error">Password validation failed: {{errors.password_validation_details}}</b>
+                {{/if}}
+                {{#if errors.invalid_data}}
+                    <b class="credentials-error">Invalid data provided. Please check your input.</b>
                 {{/if}}
             </div>
         </div>
