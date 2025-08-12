@@ -552,6 +552,10 @@ app.route('/login')
     if (req.query.error === 'registration_error') {
         errors.registration_error = true;
     }
+    if (req.query.error === 'password_validation') {
+        errors.password_validation = true;
+        errors.password_validation_details = req.query.details ? decodeURIComponent(req.query.details) : '';
+    }
     
     const courses = await getAllCourses();
     const subjects = await getAllSubjects();
@@ -657,7 +661,13 @@ app.route('/login')
                     res.redirect('/login?error=invalid_credentials');
                 }
             } else {
-                res.redirect('/login?error=registration_error');
+                // Handle specific password validation errors
+                if (result.error === 'Password validation failed' && result.details) {
+                    const passwordErrors = result.details.join(', ');
+                    res.redirect(`/login?error=password_validation&details=${encodeURIComponent(passwordErrors)}`);
+                } else {
+                    res.redirect('/login?error=registration_error');
+                }
             }
         } 
         else {

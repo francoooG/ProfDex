@@ -2,6 +2,95 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 
+// Password security configuration
+const PASSWORD_CONFIG = {
+    SALT_ROUNDS: parseInt(process.env.BCRYPT_SALT_ROUNDS) || 15, // Configurable salt rounds
+    MIN_LENGTH: 8,
+    MAX_LENGTH: 128,
+    REQUIRE_UPPERCASE: true,
+    REQUIRE_LOWERCASE: true,
+    REQUIRE_NUMBERS: true,
+    REQUIRE_SPECIAL_CHARS: true,
+    PEPPER: process.env.PASSWORD_PEPPER || 'default-pepper-change-in-production' // Additional secret
+};
+
+// Password strength validation function
+function validatePasswordStrength(password) {
+    const errors = [];
+    
+    if (!password || typeof password !== 'string') {
+        errors.push('Password must be a valid string');
+        return { isValid: false, errors };
+    }
+    
+    if (password.length < PASSWORD_CONFIG.MIN_LENGTH) {
+        errors.push(`Password must be at least ${PASSWORD_CONFIG.MIN_LENGTH} characters long`);
+    }
+    
+    if (password.length > PASSWORD_CONFIG.MAX_LENGTH) {
+        errors.push(`Password must be no more than ${PASSWORD_CONFIG.MAX_LENGTH} characters long`);
+    }
+    
+    if (PASSWORD_CONFIG.REQUIRE_UPPERCASE && !/[A-Z]/.test(password)) {
+        errors.push('Password must contain at least one uppercase letter');
+    }
+    
+    if (PASSWORD_CONFIG.REQUIRE_LOWERCASE && !/[a-z]/.test(password)) {
+        errors.push('Password must contain at least one lowercase letter');
+    }
+    
+    if (PASSWORD_CONFIG.REQUIRE_NUMBERS && !/\d/.test(password)) {
+        errors.push('Password must contain at least one number');
+    }
+    
+    if (PASSWORD_CONFIG.REQUIRE_SPECIAL_CHARS && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+        errors.push('Password must contain at least one special character');
+    }
+    
+    // Check for common weak passwords
+    const commonPasswords = ['password', '123456', 'password123', 'admin', 'user', 'test'];
+    if (commonPasswords.includes(password.toLowerCase())) {
+        errors.push('Password is too common and easily guessable');
+    }
+    
+    return {
+        isValid: errors.length === 0,
+        errors
+    };
+}
+
+// Enhanced password hashing function with pepper
+async function hashPassword(password) {
+    try {
+        // Add pepper to password before hashing
+        const pepperedPassword = password + PASSWORD_CONFIG.PEPPER;
+        
+        // Generate cryptographically strong salted hash
+        const hashedPassword = await bcrypt.hash(pepperedPassword, PASSWORD_CONFIG.SALT_ROUNDS);
+        
+        console.log(`Password hashed successfully with ${PASSWORD_CONFIG.SALT_ROUNDS} salt rounds`);
+        return hashedPassword;
+    } catch (error) {
+        console.error('Error hashing password:', error);
+        throw new Error('Password hashing failed');
+    }
+}
+
+// Enhanced password verification function
+async function verifyPassword(password, hashedPassword) {
+    try {
+        // Add pepper to password before comparison
+        const pepperedPassword = password + PASSWORD_CONFIG.PEPPER;
+        
+        // Use constant-time comparison to prevent timing attacks
+        const isValid = await bcrypt.compare(pepperedPassword, hashedPassword);
+        return isValid;
+    } catch (error) {
+        console.error('Error verifying password:', error);
+        return false;
+    }
+}
+
 var Schema = mongoose.Schema;
 
 var userSchema = new Schema({
@@ -629,7 +718,7 @@ async function loginUser(email, password, req) {
 
         if (!existingUser) {
             // Use constant time comparison to prevent timing attacks
-            await bcrypt.compare(password, '$2b$15$dummy.hash.for.timing.attack.prevention');
+            await verifyPassword(password, '$2b$15$dummy.hash.for.timing.attack.prevention');
             return null; 
         }
 
@@ -639,8 +728,10 @@ async function loginUser(email, password, req) {
             return null;
         }
 
-        const passwordMatch = await bcrypt.compare(password, existingUser.password);
+        // Use enhanced password verification with pepper
+        const passwordMatch = await verifyPassword(password, existingUser.password);
         if (!passwordMatch) {
+            console.log('Password mismatch for user:', existingUser.email);
             return null;
         }
 
@@ -709,12 +800,23 @@ async function loginUser(email, password, req) {
 
 async function registerUser(firstName, lastName, email, password, userType, additionalData) {
     try {
+        // Validate password strength before processing
+        const passwordValidation = validatePasswordStrength(password);
+        if (!passwordValidation.isValid) {
+            return { 
+                success: false, 
+                error: 'Password validation failed', 
+                details: passwordValidation.errors 
+            };
+        }
+
         const existingUser = await User.findOne({ email: email });
         if (existingUser) {
             return { success: false, error: 'User already exists' };
         }
 
-        const hashedPassword = await bcrypt.hash(password, 15);
+        // Use enhanced password hashing with pepper
+        const hashedPassword = await hashPassword(password);
 
         const user = new User({
             firstName: firstName,
@@ -798,6 +900,11 @@ module.exports = {
     
     loginUser,
     registerUser,
+    
+    // Password security functions
+    validatePasswordStrength,
+    hashPassword,
+    verifyPassword,
     
     User,
     Student,

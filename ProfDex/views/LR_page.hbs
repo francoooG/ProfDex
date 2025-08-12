@@ -12,7 +12,6 @@
                 <form action="/login" method="POST">
                     <input type="email" class="username" name="email" placeholder="Email" required><br>
                     <input type="password" class="password" name="password" placeholder="Password" required>
-                    <br><br><b>[CASE SENSITIVE]</b>
                     <button type="submit" class="userlogon">Login</button>
                 </form>
                 {{#if errors.password_mismatch}}
@@ -23,6 +22,9 @@
                 {{/if}}
                 {{#if errors.registration_error}}
                     <b class="credentials-error">Registration failed. Please check your information.</b>
+                {{/if}}
+                {{#if errors.password_validation}}
+                    <b class="credentials-error">Password validation failed: {{errors.password_validation_details}}</b>
                 {{/if}}
             </div>
         </div>
