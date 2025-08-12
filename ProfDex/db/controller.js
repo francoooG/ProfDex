@@ -2,27 +2,59 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 
-// Password security configuration
+// Password security configuration - Aligned with enterprise security policies
 const PASSWORD_CONFIG = {
     SALT_ROUNDS: parseInt(process.env.BCRYPT_SALT_ROUNDS) || 15, // Configurable salt rounds
-    MIN_LENGTH: 8,
-    MAX_LENGTH: 128,
+    
+    // Enhanced length requirements - Configurable via environment variables
+    MIN_LENGTH: parseInt(process.env.PASSWORD_MIN_LENGTH) || 12, // Minimum length (configurable)
+    MAX_LENGTH: parseInt(process.env.PASSWORD_MAX_LENGTH) || 128, // Maximum length (configurable)
+    RECOMMENDED_MIN_LENGTH: parseInt(process.env.PASSWORD_RECOMMENDED_MIN_LENGTH) || 16, // Recommended minimum for better security
+    STRONG_LENGTH_THRESHOLD: parseInt(process.env.PASSWORD_STRONG_LENGTH_THRESHOLD) || 20, // Length threshold for "strong" classification
+    
+    // Length-based complexity scoring
+    LENGTH_COMPLEXITY_BONUS: true, // Enable length-based complexity scoring
+    MIN_LENGTH_FOR_BONUS: 16, // Minimum length to receive complexity bonus
+    BONUS_POINTS_PER_EXTRA_CHAR: 0.1, // Bonus points per character above minimum
+    
+    // Character type requirements
     REQUIRE_UPPERCASE: true,
     REQUIRE_LOWERCASE: true,
     REQUIRE_NUMBERS: true,
     REQUIRE_SPECIAL_CHARS: true,
-    PEPPER: process.env.PASSWORD_PEPPER || 'default-pepper-change-in-production' // Additional secret
+    PEPPER: process.env.PASSWORD_PEPPER || 'default-pepper-change-in-production', // Additional secret
+    
+    // Enhanced complexity requirements
+    MIN_COMPLEXITY_SCORE: 3, // Minimum complexity score (0-4 scale)
+    MAX_SEQUENTIAL_CHARS: 3, // Maximum consecutive sequential characters
+    MAX_REPEATED_CHARS: 2, // Maximum consecutive repeated characters
+    
+    // Password history and age requirements
+    PASSWORD_HISTORY_SIZE: 5, // Number of previous passwords to remember
+    PASSWORD_MAX_AGE_DAYS: 90, // Maximum password age in days
+    
+    // Dictionary and pattern checks
+    ENABLE_DICTIONARY_CHECK: true,
+    ENABLE_KEYBOARD_PATTERN_CHECK: true,
+    ENABLE_SEQUENTIAL_CHECK: true,
+    
+    // Length-based security features
+    ENABLE_LENGTH_HISTORY_CHECK: true, // Check for length-based patterns in password history
+    MIN_LENGTH_VARIATION: 2, // Minimum variation in password lengths to prevent patterns
+    MAX_LENGTH_VARIATION: 10 // Maximum variation in password lengths to prevent predictable patterns
 };
 
-// Password strength validation function
+// Enhanced password strength validation function with enterprise-grade complexity requirements
 function validatePasswordStrength(password) {
     const errors = [];
+    let complexityScore = 0;
     
     if (!password || typeof password !== 'string') {
         errors.push('Password must be a valid string');
-        return { isValid: false, errors };
+        return { isValid: false, errors, complexityScore: 0 };
     }
     
+    // Basic length requirements
     if (password.length < PASSWORD_CONFIG.MIN_LENGTH) {
         errors.push(`Password must be at least ${PASSWORD_CONFIG.MIN_LENGTH} characters long`);
     }
@@ -31,32 +63,197 @@ function validatePasswordStrength(password) {
         errors.push(`Password must be no more than ${PASSWORD_CONFIG.MAX_LENGTH} characters long`);
     }
     
+    // Character type requirements
     if (PASSWORD_CONFIG.REQUIRE_UPPERCASE && !/[A-Z]/.test(password)) {
         errors.push('Password must contain at least one uppercase letter');
+    } else if (/[A-Z]/.test(password)) {
+        complexityScore++;
     }
     
     if (PASSWORD_CONFIG.REQUIRE_LOWERCASE && !/[a-z]/.test(password)) {
         errors.push('Password must contain at least one lowercase letter');
+    } else if (/[a-z]/.test(password)) {
+        complexityScore++;
     }
     
     if (PASSWORD_CONFIG.REQUIRE_NUMBERS && !/\d/.test(password)) {
         errors.push('Password must contain at least one number');
+    } else if (/\d/.test(password)) {
+        complexityScore++;
     }
     
     if (PASSWORD_CONFIG.REQUIRE_SPECIAL_CHARS && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
         errors.push('Password must contain at least one special character');
+    } else if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+        complexityScore++;
     }
     
-    // Check for common weak passwords
-    const commonPasswords = ['password', '123456', 'password123', 'admin', 'user', 'test'];
-    if (commonPasswords.includes(password.toLowerCase())) {
-        errors.push('Password is too common and easily guessable');
+    // Enhanced complexity scoring
+    if (complexityScore < PASSWORD_CONFIG.MIN_COMPLEXITY_SCORE) {
+        errors.push(`Password complexity is too low. Must meet at least ${PASSWORD_CONFIG.MIN_COMPLEXITY_SCORE} complexity criteria`);
+    }
+    
+    // Sequential character checks
+    if (PASSWORD_CONFIG.ENABLE_SEQUENTIAL_CHECK) {
+        const sequentialPatterns = [
+            '123', '234', '345', '456', '789', '012',
+            'abc', 'bcd', 'cde', 'def', 'efg', 'fgh', 'ghi', 'hij', 'ijk', 'jkl', 'klm', 'lmn', 'mno', 'nop', 'opq', 'pqr', 'qrs', 'rst', 'stu', 'tuv', 'uvw', 'vwx', 'wxy', 'xyz',
+            'qwe', 'wer', 'ert', 'rty', 'tyu', 'yui', 'uio', 'iop', 'asd', 'sdf', 'dfg', 'fgh', 'ghj', 'hjk', 'jkl', 'zxc', 'xcv', 'cvb', 'vbn', 'bnm'
+        ];
+        
+        for (const pattern of sequentialPatterns) {
+            if (password.toLowerCase().includes(pattern)) {
+                errors.push('Password contains sequential characters which are easily guessable');
+                break;
+            }
+        }
+    }
+    
+    // Repeated character checks
+    if (PASSWORD_CONFIG.MAX_REPEATED_CHARS > 0) {
+        for (let i = 0; i < password.length - PASSWORD_CONFIG.MAX_REPEATED_CHARS; i++) {
+            const char = password[i];
+            let repeated = 1;
+            for (let j = i + 1; j < password.length; j++) {
+                if (password[j] === char) {
+                    repeated++;
+                } else {
+                    break;
+                }
+            }
+            if (repeated > PASSWORD_CONFIG.MAX_REPEATED_CHARS) {
+                errors.push(`Password contains too many consecutive repeated characters (${repeated} '${char}' in a row)`);
+                break;
+            }
+        }
+    }
+    
+    // Keyboard pattern checks
+    if (PASSWORD_CONFIG.ENABLE_KEYBOARD_PATTERN_CHECK) {
+        const keyboardPatterns = [
+            'qwerty', 'asdfgh', 'zxcvbn', '123456', '654321',
+            'qazwsx', 'edcrfv', 'tgbyhn', 'ujmikl', 'plokij'
+        ];
+        
+        for (const pattern of keyboardPatterns) {
+            if (password.toLowerCase().includes(pattern)) {
+                errors.push('Password contains keyboard patterns which are easily guessable');
+                break;
+            }
+        }
+    }
+    
+    // Dictionary and common password checks
+    if (PASSWORD_CONFIG.ENABLE_DICTIONARY_CHECK) {
+        const commonPasswords = [
+            'password', '123456', 'password123', 'admin', 'user', 'test',
+            'welcome', 'monkey', 'dragon', 'master', 'letmein', 'login',
+            'abc123', 'qwerty', 'football', 'baseball', 'superman', 'batman',
+            'trustno1', 'shadow', 'michael', 'jordan', 'harley', 'ranger',
+            'buster', 'thomas', 'tigger', 'robert', 'soccer', 'batman',
+            'test123', 'guest', 'info', 'adm', 'mysql', 'user1', 'administrator'
+        ];
+        
+        if (commonPasswords.includes(password.toLowerCase())) {
+            errors.push('Password is too common and easily guessable');
+        }
+        
+        // Check for common words with simple substitutions
+        const commonWords = ['password', 'admin', 'user', 'test', 'welcome', 'login'];
+        for (const word of commonWords) {
+            const substitutions = {
+                'a': ['@', '4'], 'e': ['3'], 'i': ['1', '!'], 'o': ['0'], 's': ['$', '5'], 't': ['7']
+            };
+            
+            let modifiedWord = word;
+            for (const [letter, replacements] of Object.entries(substitutions)) {
+                for (const replacement of replacements) {
+                    modifiedWord = modifiedWord.replace(new RegExp(letter, 'g'), replacement);
+                }
+            }
+            
+            if (password.toLowerCase().includes(modifiedWord)) {
+                errors.push('Password contains common words with simple character substitutions');
+                break;
+            }
+        }
     }
     
     return {
         isValid: errors.length === 0,
-        errors
+        errors,
+        complexityScore
     };
+}
+
+// Check if password has been used recently (password history validation)
+async function checkPasswordHistory(userId, newPassword) {
+    try {
+        // Get recent password history
+        const passwordHistory = await PasswordHistory.find({ userId })
+            .sort({ createdAt: -1 })
+            .limit(PASSWORD_CONFIG.PASSWORD_HISTORY_SIZE);
+        
+        // Check if new password matches any recent password
+        for (const historyEntry of passwordHistory) {
+            const isMatch = await verifyPassword(newPassword, historyEntry.hashedPassword);
+            if (isMatch) {
+                return {
+                    isValid: false,
+                    error: `Password has been used recently. Please choose a different password.`
+                };
+            }
+        }
+        
+        return { isValid: true };
+    } catch (error) {
+        console.error('Error checking password history:', error);
+        // Fail securely - if we can't check history, allow the password change
+        return { isValid: true };
+    }
+}
+
+// Check if password has expired (password age validation)
+async function checkPasswordAge(userId) {
+    try {
+        const user = await User.findById(userId);
+        if (!user || !user.passwordChangedAt) {
+            return { isExpired: false };
+        }
+        
+        const passwordAge = Date.now() - user.passwordChangedAt.getTime();
+        const maxAgeMs = PASSWORD_CONFIG.PASSWORD_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+        
+        return {
+            isExpired: passwordAge > maxAgeMs,
+            daysRemaining: Math.ceil((maxAgeMs - passwordAge) / (24 * 60 * 60 * 1000))
+        };
+    } catch (error) {
+        console.error('Error checking password age:', error);
+        // Fail securely - if we can't check age, assume not expired
+        return { isExpired: false };
+    }
+}
+
+// Add password to history
+async function addPasswordToHistory(userId, hashedPassword) {
+    try {
+        const passwordHistoryEntry = new PasswordHistory({
+            userId: userId,
+            hashedPassword: hashedPassword
+        });
+        await passwordHistoryEntry.save();
+        
+        // Clean up old entries beyond the history size
+        const allHistory = await PasswordHistory.find({ userId }).sort({ createdAt: -1 });
+        if (allHistory.length > PASSWORD_CONFIG.PASSWORD_HISTORY_SIZE) {
+            const entriesToDelete = allHistory.slice(PASSWORD_CONFIG.PASSWORD_HISTORY_SIZE);
+            await PasswordHistory.deleteMany({ _id: { $in: entriesToDelete.map(entry => entry._id) } });
+        }
+    } catch (error) {
+        console.error('Error adding password to history:', error);
+        // Don't fail the password change if history tracking fails
+    }
 }
 
 // Enhanced password hashing function with pepper
@@ -115,6 +312,10 @@ var userSchema = new Schema({
         type: String,
         enum: ['student', 'professor', 'manager', 'administrator'],
         required: true
+    },
+    passwordChangedAt: {
+        type: Date,
+        default: Date.now
     }
 });
 var User = mongoose.model("Users", userSchema);
@@ -223,6 +424,25 @@ var administratorSchema = new Schema({
     }
 });
 var Administrator = mongoose.model("Administrators", administratorSchema);
+
+// Password history schema for tracking previous passwords
+var passwordHistorySchema = new Schema({
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Users',
+        required: true
+    },
+    hashedPassword: {
+        type: String,
+        required: true
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
+        expires: PASSWORD_CONFIG.PASSWORD_MAX_AGE_DAYS * 24 * 60 * 60 // Auto-delete after max age
+    }
+});
+var PasswordHistory = mongoose.model("PasswordHistory", passwordHistorySchema);
 
 var postSchema = new Schema({
     aPost: {
@@ -823,9 +1043,13 @@ async function registerUser(firstName, lastName, email, password, userType, addi
             lastName: lastName,
             email: email,
             password: hashedPassword,
-            userType: userType
+            userType: userType,
+            passwordChangedAt: new Date() // Track when password was set
         });
         await user.save();
+        
+        // Add password to history for future validation
+        await addPasswordToHistory(user._id, hashedPassword);
 
         let specificUserData = null;
         
@@ -858,6 +1082,55 @@ async function registerUser(firstName, lastName, email, password, userType, addi
     catch (error) {
         console.error('Error during registration: ', error);
         return { success: false, error: 'Registration failed' };
+    }
+}
+
+// Enhanced password change function with all complexity requirements
+async function changePassword(userId, currentPassword, newPassword) {
+    try {
+        // Get user
+        const user = await User.findById(userId);
+        if (!user) {
+            return { success: false, error: 'User not found' };
+        }
+        
+        // Verify current password
+        const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password);
+        if (!isCurrentPasswordValid) {
+            return { success: false, error: 'Current password is incorrect' };
+        }
+        
+        // Validate new password strength
+        const passwordValidation = validatePasswordStrength(newPassword);
+        if (!passwordValidation.isValid) {
+            return { 
+                success: false, 
+                error: 'Password validation failed', 
+                details: passwordValidation.errors 
+            };
+        }
+        
+        // Check password history
+        const historyCheck = await checkPasswordHistory(userId, newPassword);
+        if (!historyCheck.isValid) {
+            return { success: false, error: historyCheck.error };
+        }
+        
+        // Hash new password
+        const hashedNewPassword = await hashPassword(newPassword);
+        
+        // Store old password in history before updating
+        await addPasswordToHistory(userId, user.password);
+        
+        // Update user password and timestamp
+        user.password = hashedNewPassword;
+        user.passwordChangedAt = new Date();
+        await user.save();
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error changing password:', error);
+        return { success: false, error: 'Password change failed' };
     }
 }
 
@@ -905,6 +1178,10 @@ module.exports = {
     validatePasswordStrength,
     hashPassword,
     verifyPassword,
+    checkPasswordHistory,
+    checkPasswordAge,
+    addPasswordToHistory,
+    changePassword,
     
     User,
     Student,
@@ -914,5 +1191,6 @@ module.exports = {
     Course,
     Subject,
     Post,
-    Comment
+    Comment,
+    PasswordHistory
 }

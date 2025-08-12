@@ -39,7 +39,25 @@
                     <input type="text" class="registerinput" name="registerFirstName" placeholder="First Name" required><br>
                     <input type="text" class="registerinput" name="registerLastName" placeholder="Last Name" required><br>
                     <input type="email" class="registerinput" name="registerEmail" placeholder="Email" required><br>
-                    <input type="password" class="registerinput" name="registerPassword" placeholder="Password" required><br>
+                    <input type="password" class="registerinput" name="registerPassword" placeholder="Password" required id="passwordField"><br>
+                    
+                    <!-- Password Requirements Display -->
+                    <div class="password-requirements" id="passwordRequirements">
+                        <h4>Password Requirements:</h4>
+                        <ul>
+                            <li id="length-check">At least 12 characters long</li>
+                            <li id="uppercase-check">At least one uppercase letter (A-Z)</li>
+                            <li id="lowercase-check">At least one lowercase letter (a-z)</li>
+                            <li id="number-check">At least one number (0-9)</li>
+                            <li id="special-check">At least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)</li>
+                            <li id="complexity-check">Meet at least 3 complexity criteria</li>
+                            <li id="no-sequences">No sequential characters (123, abc, qwe, etc.)</li>
+                            <li id="no-repeats">No more than 2 consecutive repeated characters</li>
+                            <li id="no-patterns">No keyboard patterns (qwerty, asdfgh, etc.)</li>
+                            <li id="no-common">Not a common password</li>
+                        </ul>
+                    </div>
+                    
                     <input type="password" class="registerinput" name="confirmPassword" placeholder="Confirm Password" required><br>
                     
                     <select class="registerinput" name="userType" id="userType" required>
@@ -127,6 +145,16 @@
             } else if (password !== confirmPassword) {
                 isValid = false;
                 errorMessage = 'Passwords do not match';
+            } else {
+                // Check password requirements
+                const passwordChecks = validatePassword(password);
+                const allPasswordRequirementsMet = Object.values(passwordChecks).every(Boolean);
+                
+                if (!allPasswordRequirementsMet) {
+                    isValid = false;
+                    errorMessage = 'Password does not meet all requirements';
+                }
+            }
             } else if (userType === 'student') {
                 const studentID = document.querySelector('input[name="studentID"]').value.trim();
                 const course = document.querySelector('select[name="course"]').value;
@@ -218,7 +246,61 @@
             console.log('Register form data:', formData);
         });
 
+        // Password validation function
+        function validatePassword(password) {
+            const checks = {
+                length: password.length >= 12,
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /\d/.test(password),
+                special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+                sequences: !/(123|234|345|456|789|012|abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz|qwe|wer|ert|rty|tyu|yui|uio|iop|asd|sdf|dfg|fgh|ghj|hjk|jkl|zxc|xcv|cvb|vbn|bnm)/i.test(password),
+                repeats: !/(.)\1{2,}/.test(password), // No more than 2 consecutive repeated characters
+                patterns: !/(qwerty|asdfgh|zxcvbn|123456|654321|qazwsx|edcrfv|tgbyhn|ujmikl|plokij)/i.test(password),
+                common: !/^(password|123456|password123|admin|user|test|welcome|monkey|dragon|master|letmein|login|abc123|qwerty|football|baseball|superman|batman|trustno1|shadow|michael|jordan|harley|ranger|buster|thomas|tigger|robert|soccer|test123|guest|info|adm|mysql|user1|administrator)$/i.test(password)
+            };
+            
+            // Calculate complexity score
+            const complexityScore = [checks.uppercase, checks.lowercase, checks.number, checks.special].filter(Boolean).length;
+            checks.complexity = complexityScore >= 3;
+            
+            return checks;
+        }
+        
+        // Update password requirements display
+        function updatePasswordRequirements(password) {
+            const checks = validatePassword(password);
+            
+            // Update each requirement indicator
+            document.getElementById('length-check').className = checks.length ? 'valid' : 'invalid';
+            document.getElementById('uppercase-check').className = checks.uppercase ? 'valid' : 'invalid';
+            document.getElementById('lowercase-check').className = checks.lowercase ? 'valid' : 'invalid';
+            document.getElementById('number-check').className = checks.number ? 'valid' : 'invalid';
+            document.getElementById('special-check').className = checks.special ? 'valid' : 'invalid';
+            document.getElementById('complexity-check').className = checks.complexity ? 'valid' : 'invalid';
+            document.getElementById('no-sequences').className = checks.sequences ? 'valid' : 'invalid';
+            document.getElementById('no-repeats').className = checks.repeats ? 'valid' : 'invalid';
+            document.getElementById('no-patterns').className = checks.patterns ? 'valid' : 'invalid';
+            document.getElementById('no-common').className = checks.common ? 'valid' : 'invalid';
+            
+            // Check if all requirements are met
+            const allValid = Object.values(checks).every(Boolean);
+            return allValid;
+        }
+        
+        // Add password validation listener
         document.addEventListener('DOMContentLoaded', function() {
+            const passwordField = document.getElementById('passwordField');
+            if (passwordField) {
+                passwordField.addEventListener('input', function() {
+                    const password = this.value;
+                    const isValid = updatePasswordRequirements(password);
+                    
+                    // Update form validity to include password requirements
+                    setTimeout(checkFormValidity, 100);
+                });
+            }
+            
             addFormValidationListeners();
             checkFormValidity();
         });
