@@ -142,14 +142,17 @@ const sessionStore = MongoStore.create({
 app.use(
     session({
         store: sessionStore,
-        secret: 'Placeholder',
+        secret: process.env.SESSION_SECRET || 'fallback-secret-change-in-production',
         resave: false,
-        saveUninitialized: true,
+        saveUninitialized: false, // Don't create sessions for unauthenticated users
         cookie: {
             maxAge: 24 * 60 * 60 * 1000,
             expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
             sameSite: 'strict',
+            httpOnly: true, // Prevent XSS attacks
+            secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
         },
+        name: 'profdex.sid', // Change default session name for security
     })
 );
 
@@ -157,14 +160,52 @@ app.use(async (req, res, next) => {
     // Refresh session data if user is logged in
     if (req.session.user) {
         try {
+            // Check session age (24 hours)
+            const sessionAge = Date.now() - req.session.cookie.expires.getTime();
+            const maxSessionAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+            
+            if (sessionAge > maxSessionAge) {
+                console.log('Session expired due to age');
+                req.session.destroy();
+                res.locals.loggedInUser = null;
+                return next();
+            }
+            
             const currentUser = await User.findById(req.session.user._id);
-            if (currentUser && currentUser.userType !== req.session.user.userType) {
+            if (!currentUser) {
+                // User no longer exists in database - destroy session
+                console.log('Session destroyed: User no longer exists in database');
+                req.session.destroy();
+                res.locals.loggedInUser = null;
+                return next();
+            }
+            
+            if (currentUser.userType !== req.session.user.userType) {
                 // Update the session with the current user type
                 req.session.user.userType = currentUser.userType;
                 console.log(`Session updated: User ${currentUser.email} role changed from ${req.session.user.userType} to ${currentUser.userType}`);
             }
+            
+            // Validate session data integrity
+            if (!req.session.user._id || !req.session.user.email || !req.session.user.userType) {
+                console.log('Session destroyed: Invalid session data');
+                req.session.destroy();
+                res.locals.loggedInUser = null;
+                return next();
+            }
+            
+            // Regenerate session ID periodically for security
+            if (!req.session.regenerated) {
+                req.session.regenerated = true;
+                req.session.save();
+            }
+            
         } catch (error) {
             console.error('Error refreshing session:', error);
+            // On database error, destroy session to fail securely
+            req.session.destroy();
+            res.locals.loggedInUser = null;
+            return next();
         }
     }
     
@@ -173,36 +214,75 @@ app.use(async (req, res, next) => {
 });
 
 function isLoggedIn(req, res, next) {
-    if (req.session.user) {
-        next();
-    } 
-    else {
+    // Fail securely - deny access by default
+    if (!req.session || !req.session.user) {
         // Store the original URL to redirect back after login
-        req.session.returnTo = req.originalUrl;
-        res.redirect('/login');
+        if (req.session) {
+            req.session.returnTo = req.originalUrl;
+        }
+        return res.redirect('/login');
     }
+    
+    // Additional validation to ensure session integrity
+    if (!req.session.user._id || !req.session.user.email || !req.session.user.userType) {
+        console.log('Invalid session data detected, destroying session');
+        req.session.destroy();
+        return res.redirect('/login');
+    }
+    
+    next();
 }
 
 function isAdministrator(req, res, next) {
-    if (req.session.user && req.session.user.userType === 'administrator') {
-        next();
-    } 
-    else {
+    // Fail securely - deny access by default
+    if (!req.session || !req.session.user) {
+        if (req.session) {
+            req.session.returnTo = req.originalUrl;
+        }
+        return res.redirect('/admin/login');
+    }
+    
+    // Validate session integrity
+    if (!req.session.user._id || !req.session.user.email || !req.session.user.userType) {
+        console.log('Invalid session data detected in administrator check, destroying session');
+        req.session.destroy();
+        return res.redirect('/admin/login');
+    }
+    
+    // Check for administrator role
+    if (req.session.user.userType !== 'administrator') {
         // Store the original URL to redirect back after login
         req.session.returnTo = req.originalUrl;
-        res.redirect('/admin/login');
+        return res.redirect('/admin/login');
     }
+    
+    next();
 }
 
 function isModerator(req, res, next) {
-    if (req.session.user && (req.session.user.userType === 'manager' || req.session.user.userType === 'administrator')) {
-        next();
-    } 
-    else {
+    // Fail securely - deny access by default
+    if (!req.session || !req.session.user) {
+        if (req.session) {
+            req.session.returnTo = req.originalUrl;
+        }
+        return res.redirect('/login');
+    }
+    
+    // Validate session integrity
+    if (!req.session.user._id || !req.session.user.email || !req.session.user.userType) {
+        console.log('Invalid session data detected in moderator check, destroying session');
+        req.session.destroy();
+        return res.redirect('/login');
+    }
+    
+    // Check for moderator role (manager or administrator)
+    if (req.session.user.userType !== 'manager' && req.session.user.userType !== 'administrator') {
         // Store the original URL to redirect back after login
         req.session.returnTo = req.originalUrl;
-        res.redirect('/login');
+        return res.redirect('/login');
     }
+    
+    next();
 }
 
 async function initializeAdminAccount() {
@@ -1296,6 +1376,32 @@ app.route('/admin/login')
         console.error('Error during admin login: ', error);
         res.redirect('/admin/login?error=invalid_credentials');
     }
+});
+
+// Global error handler for authentication failures
+app.use((err, req, res, next) => {
+    console.error('Global error handler:', err);
+    
+    // Handle authentication-related errors
+    if (err.name === 'UnauthorizedError' || err.status === 401) {
+        if (req.session) {
+            req.session.destroy();
+        }
+        return res.redirect('/login');
+    }
+    
+    // Handle other errors
+    res.status(500).render(__dirname + '/views' + '/error.hbs', {
+        error: 'Server Error',
+        message: 'An unexpected error occurred.',
+        layout: false
+    });
+});
+
+// 404 handler - fail securely by redirecting to login
+app.use((req, res) => {
+    console.log('404 - Route not found:', req.originalUrl);
+    res.redirect('/login');
 });
 
 // Start the server

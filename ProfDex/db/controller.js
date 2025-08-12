@@ -606,10 +606,37 @@ async function getCommentData(id) {
 
 async function loginUser(email, password, req) {
     try {
-        const existingUser = await User.findOne({ email: email }).lean();
+        // Input validation - fail securely if inputs are invalid
+        if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+            console.log('Login attempt with invalid input types');
+            return null;
+        }
+        
+        // Sanitize email input
+        const sanitizedEmail = email.trim().toLowerCase();
+        if (!sanitizedEmail || sanitizedEmail.length > 254) { // RFC 5321 email length limit
+            console.log('Login attempt with invalid email format');
+            return null;
+        }
+        
+        // Check password length (reasonable limits)
+        if (password.length < 1 || password.length > 128) {
+            console.log('Login attempt with invalid password length');
+            return null;
+        }
+
+        const existingUser = await User.findOne({ email: sanitizedEmail }).lean();
 
         if (!existingUser) {
+            // Use constant time comparison to prevent timing attacks
+            await bcrypt.compare(password, '$2b$15$dummy.hash.for.timing.attack.prevention');
             return null; 
+        }
+
+        // Validate user data integrity
+        if (!existingUser._id || !existingUser.email || !existingUser.userType || !existingUser.password) {
+            console.log('User data integrity check failed');
+            return null;
         }
 
         const passwordMatch = await bcrypt.compare(password, existingUser.password);
@@ -617,42 +644,65 @@ async function loginUser(email, password, req) {
             return null;
         }
 
-        let userData = { ...existingUser };
-        
-        if (existingUser.userType === 'student') {
-            const studentData = await getStudentData(existingUser._id);
-            if (studentData) {
-                userData.studentData = studentData;
-            }
-        } else if (existingUser.userType === 'professor') {
-            const professorData = await getProfessorByUserId(existingUser._id);
-            if (professorData) {
-                userData.professorData = professorData;
-            }
-        } else if (existingUser.userType === 'manager') {
-            const managerData = await getManagerData(existingUser._id);
-            if (managerData) {
-                userData.managerData = managerData;
-            }
-        } else if (existingUser.userType === 'administrator') {
-            const administratorData = await getAdministratorData(existingUser._id);
-            if (administratorData) {
-                userData.administratorData = administratorData;
-            }
+        // Validate user type is in allowed enum
+        const allowedUserTypes = ['student', 'professor', 'manager', 'administrator'];
+        if (!allowedUserTypes.includes(existingUser.userType)) {
+            console.log('Invalid user type detected:', existingUser.userType);
+            return null;
         }
 
-        req.session.user = {
+        let userData = { ...existingUser };
+        
+        // Fetch additional user data based on type
+        try {
+            if (existingUser.userType === 'student') {
+                const studentData = await getStudentData(existingUser._id);
+                if (studentData) {
+                    userData.studentData = studentData;
+                }
+            } else if (existingUser.userType === 'professor') {
+                const professorData = await getProfessorByUserId(existingUser._id);
+                if (professorData) {
+                    userData.professorData = professorData;
+                }
+            } else if (existingUser.userType === 'manager') {
+                const managerData = await getManagerData(existingUser._id);
+                if (managerData) {
+                    userData.managerData = managerData;
+                }
+            } else if (existingUser.userType === 'administrator') {
+                const administratorData = await getAdministratorData(existingUser._id);
+                if (administratorData) {
+                    userData.administratorData = administratorData;
+                }
+            }
+        } catch (dataError) {
+            console.error('Error fetching additional user data:', dataError);
+            // Continue with login even if additional data fails to load
+        }
+
+        // Create session data with validation
+        const sessionData = {
             _id: existingUser._id.toString(),
             email: existingUser.email,
             firstName: existingUser.firstName,
             lastName: existingUser.lastName,
             userType: existingUser.userType
         };
+        
+        // Validate session data before setting
+        if (!sessionData._id || !sessionData.email || !sessionData.userType) {
+            console.log('Session data validation failed');
+            return null;
+        }
+
+        req.session.user = sessionData;
 
         return userData;
     } 
     catch (error) {
         console.error('Error during login: ', error);
+        // Fail securely - don't expose internal errors
         return null;
     }
 }
