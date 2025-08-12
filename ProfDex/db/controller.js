@@ -406,26 +406,91 @@ async function getAllUsers() {
 
 async function deleteUser(userId) {
     try {
-        // Delete related data first
-        await Student.deleteMany({ userId: userId });
-        await Professor.deleteMany({ userId: userId });
-        await Manager.deleteMany({ userId: userId });
-        await Administrator.deleteMany({ userId: userId });
-        await Post.deleteMany({ op: userId });
-        await Comment.deleteMany({ op: userId });
+        console.log('Starting deletion of user:', userId);
+        
+        // First, check if the user exists
+        const userExists = await User.findById(userId);
+        if (!userExists) {
+            console.log('User not found:', userId);
+            return null;
+        }
+        
+        console.log('User found:', userExists.email, 'Type:', userExists.userType);
+        
+        // Check database collections exist
+        try {
+            const managerCount = await Manager.countDocuments();
+            console.log('Total managers in database:', managerCount);
+        } catch (error) {
+            console.log('Manager collection error:', error.message);
+        }
+        
+        // Delete related data first - use try-catch for each operation
+        try {
+            const studentResult = await Student.deleteMany({ userId: userId });
+            console.log('Deleted students:', studentResult.deletedCount);
+        } catch (error) {
+            console.log('No students to delete or error:', error.message);
+        }
+        
+        try {
+            const professorResult = await Professor.deleteMany({ userId: userId });
+            console.log('Deleted professors:', professorResult.deletedCount);
+        } catch (error) {
+            console.log('No professors to delete or error:', error.message);
+        }
+        
+        try {
+            const managerResult = await Manager.deleteMany({ userId: userId });
+            console.log('Deleted managers:', managerResult.deletedCount);
+        } catch (error) {
+            console.log('No managers to delete or error:', error.message);
+        }
+        
+        try {
+            const adminResult = await Administrator.deleteMany({ userId: userId });
+            console.log('Deleted administrators:', adminResult.deletedCount);
+        } catch (error) {
+            console.log('No administrators to delete or error:', error.message);
+        }
+        
+        // Delete posts and comments - convert userId to string
+        try {
+            const userIdString = userId.toString();
+            const postResult = await Post.deleteMany({ op: userIdString });
+            console.log('Deleted posts:', postResult.deletedCount);
+        } catch (error) {
+            console.log('No posts to delete or error:', error.message);
+        }
+        
+        try {
+            const userIdString = userId.toString();
+            const commentResult = await Comment.deleteMany({ op: userIdString });
+            console.log('Deleted comments:', commentResult.deletedCount);
+        } catch (error) {
+            console.log('No comments to delete or error:', error.message);
+        }
         
         // Finally delete the user
         const result = await User.findByIdAndDelete(userId);
-        return result;
+        if (result) {
+            console.log('Successfully deleted user:', result.email);
+            return result;
+        } else {
+            console.log('Failed to delete user - user not found');
+            return null;
+        }
     } 
     catch (error) {
         console.error('Error deleting user: ', error);
-        return null;
+        throw error; // Re-throw to get better error handling
     }
 }
 
 async function updateUserRole(userId, newRole) {
     try {
+        console.log(`Updating user ${userId} to role: ${newRole}`);
+        
         // Remove from all role collections first
         await Student.deleteMany({ userId: userId });
         await Professor.deleteMany({ userId: userId });
@@ -437,7 +502,21 @@ async function updateUserRole(userId, newRole) {
         
         // Create new role-specific record
         if (newRole === 'student') {
-            return await createStudent(userId, 'TEMP_ID', null, '');
+            // Get the first available course for default assignment
+            const courses = await getAllCourses();
+            let defaultCourseId = null;
+            
+            if (courses && courses.length > 0) {
+                defaultCourseId = courses[0]._id;
+                console.log(`Using default course: ${courses[0].name} (${defaultCourseId})`);
+            } else {
+                console.log('No courses available, creating a default course');
+                // Create a default course if none exist
+                const defaultCourse = await createCourse('General Studies', 'GEN101', 'Default course for role changes');
+                defaultCourseId = defaultCourse._id;
+            }
+            
+            return await createStudent(userId, 'TEMP_ID', defaultCourseId, '');
         } else if (newRole === 'professor') {
             return await createProfessor(userId, 'TEMP_ID', [], '');
         } else if (newRole === 'manager') {

@@ -85,6 +85,7 @@ mongoose.connection.on('connected', async (err, res) => {
 
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 app.engine('hbs', handlebars.engine({ 
     extname: 'hbs',
@@ -1083,35 +1084,67 @@ app.route('/admin/users')
     }
 });
 
+app.route('/admin/logs')
+.get(isAdministrator, async (req, res) => {
+    try {
+        res.render(__dirname + '/views' + '/admin_logs.hbs', {
+            layout: false
+        });
+    } catch (error) {
+        console.error('Error loading admin logs: ', error);
+        res.status(500).send('Server error');
+    }
+});
+
 app.post('/admin/delete-user', isAdministrator, async (req, res) => {
     try {
+        console.log('Full request body:', req.body);
         const { userId } = req.body;
+        console.log('Admin attempting to delete user:', userId);
+        console.log('userId type:', typeof userId);
+        console.log('userId value:', userId);
+        
+        if (!userId) {
+            console.log('No userId provided');
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+        
         const result = await deleteUser(userId);
         
         if (result) {
+            console.log('User deletion successful:', result.email);
             res.json({ success: true, message: 'User deleted successfully' });
         } else {
-            res.status(500).json({ error: 'Failed to delete user' });
+            console.log('User deletion failed - no result returned');
+            res.status(500).json({ error: 'Failed to delete user - user may not exist' });
         }
     } catch (error) {
         console.error('Error deleting user: ', error);
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error: ' + error.message });
     }
 });
 
 app.post('/admin/update-role', isAdministrator, async (req, res) => {
     try {
         const { userId, newRole } = req.body;
+        console.log(`Admin attempting to update user ${userId} to role: ${newRole}`);
+        
+        if (!userId || !newRole) {
+            return res.status(400).json({ error: 'User ID and new role are required' });
+        }
+        
         const result = await updateUserRole(userId, newRole);
         
         if (result) {
+            console.log(`Successfully updated user ${userId} to role: ${newRole}`);
             res.json({ success: true, message: 'User role updated successfully' });
         } else {
-            res.status(500).json({ error: 'Failed to update user role' });
+            console.log(`Failed to update user ${userId} to role: ${newRole}`);
+            res.status(500).json({ error: 'Failed to update user role - please try again' });
         }
     } catch (error) {
         console.error('Error updating user role: ', error);
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Server error: ' + error.message });
     }
 });
 

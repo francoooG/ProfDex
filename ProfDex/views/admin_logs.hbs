@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Logs - ProfDex</title>
+    <link rel="stylesheet" href="/admin_dashboard.css">
+</head>
+<body>
+    <div class="admin-container">
+        <header class="admin-header">
+            <h1>System Logs</h1>
+            <div class="admin-info">
+                <span>Welcome, {{loggedInUser.firstName}} {{loggedInUser.lastName}}</span>
+                <a href="/logout" class="logout-btn">Logout</a>
+            </div>
+        </header>
+        
+        <nav class="admin-nav">
+            <a href="/" class="nav-link">← Back to Main Site</a>
+            <a href="/admin" class="nav-link">Dashboard</a>
+            <a href="/admin/logs" class="nav-link active">View Logs</a>
+        </nav>
+        
+        <main class="admin-main">
+            <div class="logs-section">
+                <div class="dashboard-card">
+                    <h3>System Activity Logs</h3>
+                    <div class="logs-container">
+                        <div class="log-entry">
+                            <span class="log-time">2024-01-15 10:30:00</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">System startup completed</span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">2024-01-15 10:29:45</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">Admin account initialized</span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">2024-01-15 10:29:30</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">Database connection established</span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">2024-01-15 10:28:15</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">Server started on port 3000</span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">2024-01-15 10:27:45</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">MongoDB connection pool initialized</span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">2024-01-15 10:27:30</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">Express application initialized</span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">2024-01-15 10:27:15</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">Handlebars template engine configured</span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">2024-01-15 10:27:00</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">Session middleware configured</span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">2024-01-15 10:26:45</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">Static file serving configured</span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">2024-01-15 10:26:30</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">ProfDex application starting...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
