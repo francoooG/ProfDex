@@ -23,7 +23,6 @@
                                 <div class="hiddenDate" style="display:none;">1</div>
                                 <div class="profTitle">Dr.</div>
                                 <div class="profName">{{userId.lastName}}</div>
-                                <div class="profCourse">{{subjects.[0].name}}</div>
                             </a>
                             <a href="/viewprof?id={{_id}}" class="view-profile-link">View Profile</a>
                         </div>	
@@ -50,7 +49,9 @@
                 {{#if (or (eq userType 'manager') (eq userType 'administrator'))}}
                 <a class="moderator-link" href="/moderator">Moderator</a>
                 {{/if}}
-                <a class="admin-link" href="/admin/login">Admin</a>
+                {{#if (eq userType 'administrator')}}
+                <a class="admin-link" href="/admin">Admin</a>
+                {{/if}}
                 <form action="/viewprof" method="post">
                     <input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
                     <button type="submit" id="searchbutton"></button>

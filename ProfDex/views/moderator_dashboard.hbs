@@ -19,7 +19,6 @@
         <nav class="moderator-nav">
             <a href="/" class="nav-link">← Back to Main Site</a>
             <a href="/moderator" class="nav-link active">Dashboard</a>
-            <a href="/moderator/users" class="nav-link">User Management</a>
         </nav>
         
         <main class="moderator-main">
@@ -28,16 +27,16 @@
                     <h3>Role Assignment Overview</h3>
                     <div class="stats">
                         <div class="stat-item">
-                            <span class="stat-number" id="student-count">0</span>
+                            <span class="stat-number" id="student-count">{{studentCount}}</span>
                             <span class="stat-label">Students</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-number" id="professor-count">0</span>
+                            <span class="stat-number" id="professor-count">{{professorCount}}</span>
                             <span class="stat-label">Professors</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-number" id="unassigned-count">0</span>
-                            <span class="stat-label">Unassigned</span>
+                            <span class="stat-number" id="unassigned-count">{{unassignedCount}}</span>
+                            <span class="stat-label">Non Role B</span>
                         </div>
                     </div>
                 </div>
@@ -96,33 +95,8 @@
         </main>
     </div>
     
-    <!-- Hidden element to store users data for JavaScript -->
-    <div id="users-data" data-users="{{#if users}}{{JSON.stringify users}}{{else}}[]{{/if}}" style="display: none;"></div>
-    
     <script>
-        // Global users data from server
-        const usersData = JSON.parse(document.getElementById('users-data').getAttribute('data-users') || '[]');
-        
-        // Calculate and display statistics
-        function updateStatistics() {
-            const users = usersData || [];
-            let studentCount = 0;
-            let professorCount = 0;
-            let unassignedCount = 0;
-            
-            users.forEach(user => {
-                if (user.userType === 'student') studentCount++;
-                else if (user.userType === 'professor') professorCount++;
-                else if (user.userType === 'manager' || user.userType === 'administrator') unassignedCount++;
-            });
-            
-            document.getElementById('student-count').textContent = studentCount;
-            document.getElementById('professor-count').textContent = professorCount;
-            document.getElementById('unassigned-count').textContent = unassignedCount;
-        }
-        
-        // Initialize statistics when page loads
-        document.addEventListener('DOMContentLoaded', updateStatistics);
+        // Statistics are now calculated server-side and displayed directly
         
         function updateUserRole(userId, newRole) {
             if (confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
@@ -154,11 +128,24 @@
         }
         
         function exportUserData() {
-            const users = usersData || [];
-            const csvContent = "data:text/csv;charset=utf-8," 
-                + "Name,Email,Role\n"
-                + users.map(user => `${user.firstName} ${user.lastName},${user.email},${user.userType}`).join("\n");
+            // Get user data from the table
+            const tableRows = document.querySelectorAll('.user-table tbody tr');
+            const csvRows = ["Name,Email,Role"];
             
+            tableRows.forEach(row => {
+                const nameCell = row.querySelector('td:nth-child(1)');
+                const emailCell = row.querySelector('td:nth-child(2)');
+                const roleSelect = row.querySelector('.role-select');
+                
+                if (nameCell && emailCell && roleSelect) {
+                    const name = nameCell.textContent.trim();
+                    const email = emailCell.textContent.trim();
+                    const role = roleSelect.value;
+                    csvRows.push(`"${name}","${email}","${role}"`);
+                }
+            });
+            
+            const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);

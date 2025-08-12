@@ -118,7 +118,9 @@ app.engine('hbs', handlebars.engine({
             }
             return options.inverse(this);
         },
-
+        'JSON.stringify': function(obj) {
+            return JSON.stringify(obj);
+        }
     }
 }));
 app.set('view engine', 'hbs');
@@ -151,7 +153,21 @@ app.use(
     })
 );
 
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
+    // Refresh session data if user is logged in
+    if (req.session.user) {
+        try {
+            const currentUser = await User.findById(req.session.user._id);
+            if (currentUser && currentUser.userType !== req.session.user.userType) {
+                // Update the session with the current user type
+                req.session.user.userType = currentUser.userType;
+                console.log(`Session updated: User ${currentUser.email} role changed from ${req.session.user.userType} to ${currentUser.userType}`);
+            }
+        } catch (error) {
+            console.error('Error refreshing session:', error);
+        }
+    }
+    
     res.locals.loggedInUser = req.session.user;
     next();
 });
@@ -250,11 +266,20 @@ app.route('/createpost')
     }
 
     const professors = await getAllProfessorData();
+    const subjects = await getAllSubjects();
+    
+    console.log('CreatePost - Professors found:', professors ? professors.length : 'No professors');
+    console.log('CreatePost - Subjects found:', subjects ? subjects.length : 'No subjects');
+    if (subjects && subjects.length > 0) {
+        console.log('CreatePost - Sample subjects:', subjects.map(s => s.name));
+    }
+    
     const userType = req.session.user ? req.session.user.userType : null;
     res.render(__dirname + '/views' + '/createpost.hbs', { 
         layout: false, 
         errors, 
         professors,
+        subjects,
         userType
     });
 })
@@ -558,8 +583,22 @@ app.get('/logout', (req, res) => {
 app.route('/reviewlist')
 .get(async (req, res) => {
     var professorId = req.query.id;
+    console.log('ReviewList - Professor ID:', professorId);
+    
     var professorData = await getProfessorData(professorId);
+    console.log('ReviewList - Professor Data:', professorData ? 'Found' : 'Not found');
+    
     var postData = await getProfPostData(professorId);
+    console.log('ReviewList - Post Data:', postData ? `Found ${postData.length} posts` : 'No posts found');
+    if (postData && postData.length > 0) {
+        console.log('ReviewList - First post sample:', {
+            _id: postData[0]._id,
+            op: postData[0].op,
+            to: postData[0].to,
+            opname: postData[0].opname
+        });
+    }
+    
     const userType = req.session.user ? req.session.user.userType : '';
     let postUserTypes = [];
     if (postData && postData.length) {
@@ -838,16 +877,39 @@ app.route('/viewprof')
 .get(async (req, res) => {
     try {
         var professorId = req.query.id;
-        var professorData = await getProfessorData(professorId);
-        var postData = await getProfPostData(professorId);
+        console.log('ViewProf - Professor ID:', professorId);
         
-        res.render(__dirname + '/views' + '/viewprof.hbs', {
+        var professorData = await getProfessorData(professorId);
+        console.log('ViewProf - Professor Data:', professorData ? 'Found' : 'Not found');
+        
+        var postData = await getProfPostData(professorId);
+        console.log('ViewProf - Post Data:', postData ? `Found ${postData.length} posts` : 'No posts found');
+        if (postData && postData.length > 0) {
+            console.log('ViewProf - First post sample:', {
+                _id: postData[0]._id,
+                op: postData[0].op,
+                to: postData[0].to,
+                opname: postData[0].opname
+            });
+            console.log('ViewProf - Full postData structure:', JSON.stringify(postData, null, 2));
+        }
+        
+        const templateData = {
             professorData,
             postData,
             loggedInUser: req.session.user,
             userType: req.session.user ? req.session.user.userType : null,
             layout: false
+        };
+        
+        console.log('ViewProf - Template data being passed:', {
+            professorData: templateData.professorData ? 'Found' : 'Not found',
+            postDataLength: templateData.postData ? templateData.postData.length : 'No postData',
+            userType: templateData.userType,
+            layout: templateData.layout
         });
+        
+        res.render(__dirname + '/views' + '/viewprof.hbs', templateData);
     }
     catch (error) {
         console.error('ViewProf Error:', error);
@@ -1000,14 +1062,37 @@ app.route('/help').all(async(req, res) => {
 app.route('/moderator')
 .get(isModerator, async (req, res) => {
     try {
+        console.log('Moderator route accessed');
         const users = await getAllUsers();
-        const userType = req.session.user ? req.session.user.userType : null;
+        console.log('getAllUsers result:', users);
         
-        res.render(__dirname + '/views' + '/moderator_dashboard.hbs', {
+        const userType = req.session.user ? req.session.user.userType : null;
+        console.log('Current user type:', userType);
+        
+        // Calculate user counts for statistics
+        const studentCount = users.filter(user => user.userType === 'student').length;
+        const professorCount = users.filter(user => user.userType === 'professor').length;
+        const unassignedCount = users.filter(user => user.userType === 'manager' || user.userType === 'administrator').length;
+        
+        console.log('Moderator Dashboard Statistics:');
+        console.log('Total users:', users.length);
+        console.log('Student count:', studentCount);
+        console.log('Professor count:', professorCount);
+        console.log('Unassigned count:', unassignedCount);
+        console.log('User types found:', users.map(u => u.userType));
+        
+        const templateData = {
             users,
             userType,
+            studentCount,
+            professorCount,
+            unassignedCount,
             layout: false
-        });
+        };
+        
+        console.log('Template data being passed:', templateData);
+        
+        res.render(__dirname + '/views' + '/moderator_dashboard.hbs', templateData);
     } catch (error) {
         console.error('Error loading moderator dashboard: ', error);
         res.status(500).send('Server error');

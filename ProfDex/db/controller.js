@@ -395,7 +395,12 @@ async function createAdministrator(userId) {
 
 async function getAllUsers() {
     try {
+        console.log('getAllUsers function called');
         const users = await User.find().lean();
+        console.log('getAllUsers found users:', users ? users.length : 'null');
+        if (users && users.length > 0) {
+            console.log('First user sample:', users[0]);
+        }
         return users;
     } 
     catch (error) {
@@ -535,7 +540,7 @@ async function updateUserRole(userId, newRole) {
 
 async function getProfPostData(id) {
     try {
-        const review = await Post.find({to: id}).lean();
+        const review = await Post.find({to: new mongoose.Types.ObjectId(id)}).lean();
         return review;
     } 
     catch (error) {

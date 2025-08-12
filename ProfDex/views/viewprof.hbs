@@ -35,7 +35,6 @@
     </div>
 
     <div class="page-container">
-        {{#with professorData}}
         <div class="profile-header">
             <div class="header-content">
                 <div class="professor-avatar">
@@ -44,76 +43,12 @@
                     </svg>
                 </div>
                 <div class="professor-info">
-                    <h1>{{userId.firstName}} {{userId.lastName}}</h1>
-                    <div class="professor-meta">
-                        <span class="teacher-id">ID: {{teacherID}}</span>
-                        {{#if subjects.length}}
-                        <div class="subjects-tags">
-                            {{#each subjects}}
-                            <span class="subject-tag">{{name}}</span>
-                            {{/each}}
-                        </div>
-                        {{/if}}
-                    </div>
+                    <h1>{{professorData.userId.firstName}} {{professorData.userId.lastName}}</h1>
                 </div>
             </div>
         </div>
 
         <div class="main-content">
-            <div class="profile-section">
-                <div class="section-header">
-                    <h2>Profile Information</h2>
-                </div>
-                <div class="profile-details">
-                    {{#if bio}}
-                    <div class="detail-item">
-                        <div class="detail-label">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22 22 17.52 22 12 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20Z" fill="#667eea"/>
-                                <path d="M11 7H13V9H11V7ZM11 11H13V17H11V11Z" fill="#667eea"/>
-                            </svg>
-                            <span>Biography</span>
-                        </div>
-                        <div class="detail-content">
-                            <p>{{bio}}</p>
-                        </div>
-                    </div>
-                    {{/if}}
-                    
-                    <div class="detail-item">
-                        <div class="detail-label">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22 22 17.52 22 12 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20Z" fill="#667eea"/>
-                                <path d="M11 7H13V9H11V7ZM11 11H13V17H11V11Z" fill="#667eea"/>
-                            </svg>
-                            <span>Teacher ID</span>
-                        </div>
-                        <div class="detail-content">
-                            <span class="teacher-id-value">{{teacherID}}</span>
-                        </div>
-                    </div>
-
-                    {{#if subjects.length}}
-                    <div class="detail-item">
-                        <div class="detail-label">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22 22 17.52 22 12 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12S7.59 4 12 4 20 7.59 20 12 16.41 20 12 20Z" fill="#667eea"/>
-                                <path d="M11 7H13V9H11V7ZM11 11H13V17H11V11Z" fill="#667eea"/>
-                            </svg>
-                            <span>Subjects</span>
-                        </div>
-                        <div class="detail-content">
-                            <div class="subjects-list">
-                                {{#each subjects}}
-                                <span class="subject-item">{{name}}</span>
-                                {{/each}}
-                            </div>
-                        </div>
-                    </div>
-                    {{/if}}
-                </div>
-            </div>
-
             <div class="reviews-section">
                 <div class="section-header">
                     <h2>Student Reviews</h2>
@@ -193,7 +128,6 @@
                 {{/if}}
             </div>
         </div>
-        {{/with}}
     </div>
 </body>
 </html>
