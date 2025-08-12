@@ -44,6 +44,16 @@ const PASSWORD_CONFIG = {
     MAX_LENGTH_VARIATION: 10 // Maximum variation in password lengths to prevent predictable patterns
 };
 
+// Account lockout configuration - Prevents brute force attacks while avoiding DoS
+const ACCOUNT_LOCKOUT_CONFIG = {
+    MAX_FAILED_ATTEMPTS: parseInt(process.env.MAX_FAILED_ATTEMPTS) || 5, // Maximum failed attempts before lockout
+    LOCKOUT_DURATION_MINUTES: parseInt(process.env.LOCKOUT_DURATION_MINUTES) || 15, // Lockout duration in minutes
+    RESET_ATTEMPTS_AFTER_MINUTES: parseInt(process.env.RESET_ATTEMPTS_AFTER_MINUTES) || 30, // Reset failed attempts after this time
+    ENABLE_ACCOUNT_LOCKOUT: process.env.ENABLE_ACCOUNT_LOCKOUT !== 'false', // Default to true
+    LOG_FAILED_ATTEMPTS: process.env.LOG_FAILED_ATTEMPTS !== 'false', // Default to true
+    ADMIN_NOTIFICATION_THRESHOLD: parseInt(process.env.ADMIN_NOTIFICATION_THRESHOLD) || 10 // Notify admin after this many failed attempts
+};
+
 // Enhanced password strength validation function with enterprise-grade complexity requirements
 function validatePasswordStrength(password) {
     const errors = [];
@@ -380,6 +390,126 @@ async function verifyPassword(password, hashedPassword) {
     }
 }
 
+// Account lockout management functions
+async function checkAccountLockout(userId) {
+    try {
+        if (!ACCOUNT_LOCKOUT_CONFIG.ENABLE_ACCOUNT_LOCKOUT) {
+            return { isLocked: false, reason: null };
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return { isLocked: false, reason: null };
+        }
+
+        // Check if account is currently locked
+        if (user.accountLocked && user.lockoutExpiresAt) {
+            const now = new Date();
+            if (now < user.lockoutExpiresAt) {
+                const remainingMinutes = Math.ceil((user.lockoutExpiresAt - now) / (1000 * 60));
+                return { 
+                    isLocked: true, 
+                    reason: `Account is locked due to too many failed login attempts. Try again in ${remainingMinutes} minutes.`,
+                    remainingMinutes
+                };
+            } else {
+                // Lockout has expired, reset the account
+                await resetAccountLockout(userId);
+                return { isLocked: false, reason: null };
+            }
+        }
+
+        // Check if failed attempts should be reset due to time
+        if (user.lastFailedLoginAt) {
+            const now = new Date();
+            const timeSinceLastAttempt = (now - user.lastFailedLoginAt) / (1000 * 60); // minutes
+            
+            if (timeSinceLastAttempt >= ACCOUNT_LOCKOUT_CONFIG.RESET_ATTEMPTS_AFTER_MINUTES) {
+                await resetAccountLockout(userId);
+                return { isLocked: false, reason: null };
+            }
+        }
+
+        return { isLocked: false, reason: null };
+    } catch (error) {
+        console.error('Error checking account lockout:', error);
+        return { isLocked: false, reason: null }; // Fail open for availability
+    }
+}
+
+async function recordFailedLoginAttempt(userId, email) {
+    try {
+        if (!ACCOUNT_LOCKOUT_CONFIG.ENABLE_ACCOUNT_LOCKOUT) {
+            return;
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return;
+        }
+
+        const now = new Date();
+        const newFailedAttempts = user.failedLoginAttempts + 1;
+
+        // Log failed attempt if enabled
+        if (ACCOUNT_LOCKOUT_CONFIG.LOG_FAILED_ATTEMPTS) {
+            console.log(`Failed login attempt ${newFailedAttempts} for user: ${email}`);
+        }
+
+        // Check if account should be locked
+        if (newFailedAttempts >= ACCOUNT_LOCKOUT_CONFIG.MAX_FAILED_ATTEMPTS) {
+            const lockoutExpiresAt = new Date(now.getTime() + (ACCOUNT_LOCKOUT_CONFIG.LOCKOUT_DURATION_MINUTES * 60 * 1000));
+            
+            await User.findByIdAndUpdate(userId, {
+                failedLoginAttempts: newFailedAttempts,
+                accountLocked: true,
+                lockoutExpiresAt: lockoutExpiresAt,
+                lastFailedLoginAt: now
+            });
+
+            console.log(`Account locked for user: ${email} due to ${newFailedAttempts} failed attempts. Lockout expires at: ${lockoutExpiresAt}`);
+
+            // Notify admin if threshold is reached
+            if (newFailedAttempts >= ACCOUNT_LOCKOUT_CONFIG.ADMIN_NOTIFICATION_THRESHOLD) {
+                console.log(`ADMIN ALERT: User ${email} has ${newFailedAttempts} failed login attempts`);
+            }
+        } else {
+            // Just update the failed attempts count
+            await User.findByIdAndUpdate(userId, {
+                failedLoginAttempts: newFailedAttempts,
+                lastFailedLoginAt: now
+            });
+        }
+    } catch (error) {
+        console.error('Error recording failed login attempt:', error);
+    }
+}
+
+async function resetAccountLockout(userId) {
+    try {
+        await User.findByIdAndUpdate(userId, {
+            failedLoginAttempts: 0,
+            accountLocked: false,
+            lockoutExpiresAt: null,
+            lastFailedLoginAt: null
+        });
+    } catch (error) {
+        console.error('Error resetting account lockout:', error);
+    }
+}
+
+async function unlockAccount(userId) {
+    try {
+        await User.findByIdAndUpdate(userId, {
+            accountLocked: false,
+            lockoutExpiresAt: null
+        });
+        console.log(`Account unlocked for user ID: ${userId}`);
+    } catch (error) {
+        console.error('Error unlocking account:', error);
+    }
+}
+
 var Schema = mongoose.Schema;
 
 var userSchema = new Schema({
@@ -408,6 +538,23 @@ var userSchema = new Schema({
     passwordChangedAt: {
         type: Date,
         default: Date.now
+    },
+    // Account lockout fields
+    failedLoginAttempts: {
+        type: Number,
+        default: 0
+    },
+    accountLocked: {
+        type: Boolean,
+        default: false
+    },
+    lockoutExpiresAt: {
+        type: Date,
+        default: null
+    },
+    lastFailedLoginAt: {
+        type: Date,
+        default: null
     }
 });
 var User = mongoose.model("Users", userSchema);
@@ -1040,10 +1187,19 @@ async function loginUser(email, password, req) {
             return null;
         }
 
+        // Check account lockout status before attempting authentication
+        const lockoutStatus = await checkAccountLockout(existingUser._id);
+        if (lockoutStatus.isLocked) {
+            console.log(`Login attempt blocked for locked account: ${sanitizedEmail}`);
+            return { error: 'account_locked', reason: lockoutStatus.reason };
+        }
+
         // Use enhanced password verification with pepper
         const passwordMatch = await verifyPassword(password, existingUser.password);
         if (!passwordMatch) {
             console.log('Authentication failed for user account');
+            // Record failed login attempt for account lockout
+            await recordFailedLoginAttempt(existingUser._id, sanitizedEmail);
             return null;
         }
 
@@ -1100,6 +1256,9 @@ async function loginUser(email, password, req) {
         }
 
         req.session.user = sessionData;
+
+        // Reset account lockout on successful login
+        await resetAccountLockout(existingUser._id);
 
         return userData;
     } 
@@ -1285,6 +1444,12 @@ module.exports = {
     changePassword,
     checkLengthPatterns,
     getLengthClassification,
+    
+    // Account lockout functions
+    checkAccountLockout,
+    recordFailedLoginAttempt,
+    resetAccountLockout,
+    unlockAccount,
     
     User,
     Student,

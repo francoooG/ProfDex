@@ -559,6 +559,10 @@ app.route('/login')
     if (req.query.error === 'invalid_data') {
         errors.invalid_data = true;
     }
+    if (req.query.error === 'account_locked') {
+        errors.account_locked = true;
+        errors.account_locked_reason = req.query.reason ? decodeURIComponent(req.query.reason) : 'Account is locked due to too many failed login attempts.';
+    }
     
     const courses = await getAllCourses();
     const subjects = await getAllSubjects();
@@ -590,6 +594,12 @@ app.route('/login')
             const loggedInUser = await loginUser(email, password, req);
 
             if (loggedInUser) {
+                // Check for account locked error
+                if (loggedInUser.error === 'account_locked') {
+                    res.redirect(`/login?error=account_locked&reason=${encodeURIComponent(loggedInUser.reason)}`);
+                    return;
+                }
+
                 const userType = loggedInUser.userType;
                 // Redirect to original destination if available, otherwise to role-specific page
                 const returnTo = req.session.returnTo;
@@ -1352,6 +1362,10 @@ app.route('/admin/login')
     if (req.query.error === 'authentication_failed') {
         errors.authentication_failed = true;
     }
+    if (req.query.error === 'account_locked') {
+        errors.account_locked = true;
+        errors.account_locked_reason = req.query.reason ? decodeURIComponent(req.query.reason) : 'Account is locked due to too many failed login attempts.';
+    }
     
     // Store the original URL to redirect back after login
     if (req.query.returnTo) {
@@ -1373,14 +1387,24 @@ app.route('/admin/login')
         
         const loggedInUser = await loginUser(email, password, req);
         
-        if (loggedInUser && loggedInUser.userType === 'administrator') {
-            // Redirect to original destination if available, otherwise to admin dashboard
-            const returnTo = req.session.returnTo;
-            if (returnTo && returnTo !== '/admin/login') {
-                delete req.session.returnTo;
-                res.redirect(returnTo);
+        if (loggedInUser) {
+            // Check for account locked error
+            if (loggedInUser.error === 'account_locked') {
+                res.redirect(`/admin/login?error=account_locked&reason=${encodeURIComponent(loggedInUser.reason)}`);
+                return;
+            }
+            
+            if (loggedInUser.userType === 'administrator') {
+                // Redirect to original destination if available, otherwise to admin dashboard
+                const returnTo = req.session.returnTo;
+                if (returnTo && returnTo !== '/admin/login') {
+                    delete req.session.returnTo;
+                    res.redirect(returnTo);
+                } else {
+                    res.redirect('/admin');
+                }
             } else {
-                res.redirect('/admin');
+                res.redirect('/admin/login?error=authentication_failed');
             }
         } else {
             res.redirect('/admin/login?error=authentication_failed');

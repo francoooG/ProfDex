@@ -19,6 +19,11 @@
                 Invalid username and/or password.
             </div>
             {{/if}}
+            {{#if errors.account_locked}}
+            <div class="error-message">
+                {{errors.account_locked_reason}}
+            </div>
+            {{/if}}
             
             <form method="POST" action="/admin/login" class="login-form">
                 <div class="form-group">
