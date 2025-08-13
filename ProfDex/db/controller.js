@@ -32,6 +32,7 @@ const PASSWORD_CONFIG = {
     // Password history and age requirements
     PASSWORD_HISTORY_SIZE: 5, // Number of previous passwords to remember
     PASSWORD_MAX_AGE_DAYS: 90, // Maximum password age in days
+    PASSWORD_MIN_AGE_DAYS: 1, // Minimum password age in days before it can be changed
     
     // Dictionary and pattern checks
     ENABLE_DICTIONARY_CHECK: true,
@@ -1854,6 +1855,29 @@ async function registerUser(firstName, lastName, email, password, userType, addi
     }
 }
 
+// Check if password is old enough to be changed
+function checkPasswordAge(user) {
+    if (!user.passwordChangedAt) {
+        // If no password change timestamp exists, allow the change
+        // This handles new users or users with legacy accounts
+        return { isValid: true };
+    }
+    
+    const now = new Date();
+    const passwordAge = now.getTime() - user.passwordChangedAt.getTime();
+    const minAgeMs = PASSWORD_CONFIG.PASSWORD_MIN_AGE_DAYS * 24 * 60 * 60 * 1000; // Convert days to milliseconds
+    
+    if (passwordAge < minAgeMs) {
+        const remainingHours = Math.ceil((minAgeMs - passwordAge) / (60 * 60 * 1000));
+        return {
+            isValid: false,
+            error: `Password must be at least ${PASSWORD_CONFIG.PASSWORD_MIN_AGE_DAYS} day(s) old before it can be changed. Please wait ${remainingHours} hour(s) before attempting to change your password again.`
+        };
+    }
+    
+    return { isValid: true };
+}
+
 // Enhanced password change function with all complexity requirements
 async function changePassword(userId, currentPassword, newPassword) {
     try {
@@ -1867,6 +1891,12 @@ async function changePassword(userId, currentPassword, newPassword) {
         const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password);
         if (!isCurrentPasswordValid) {
             return { success: false, error: 'Current password is incorrect' };
+        }
+        
+        // Check password age requirement
+        const ageCheck = checkPasswordAge(user);
+        if (!ageCheck.isValid) {
+            return { success: false, error: ageCheck.error };
         }
         
         // Validate new password strength

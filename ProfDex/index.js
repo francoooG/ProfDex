@@ -1706,6 +1706,10 @@ app.route('/change-password')
         errors.password_validation_error = true;
         errors.password_validation_details = req.query.details ? decodeURIComponent(req.query.details) : '';
     }
+    if (req.query.error === 'password_age_error') {
+        errors.password_age_error = true;
+        errors.password_age_message = req.query.message ? decodeURIComponent(req.query.message) : '';
+    }
     if (req.query.success === 'true') {
         errors.success = true;
     }
@@ -1746,6 +1750,9 @@ app.route('/change-password')
             } else if (result.error === 'Password validation failed') {
                 const details = encodeURIComponent(result.details.join(', '));
                 res.redirect(`/change-password?error=password_validation_error&details=${details}`);
+            } else if (result.error.includes('must be at least') && result.error.includes('day(s) old')) {
+                const message = encodeURIComponent(result.error);
+                res.redirect(`/change-password?error=password_age_error&message=${message}`);
             } else {
                 res.redirect('/change-password?error=validation_error');
             }
