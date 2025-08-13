@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="/moderator_dashboard.css">
 </head>
 <body>
+    <!-- Toast Notification Container for Last Use Information -->
+    <div class="toast-container" id="toastContainer"></div>
+    
     <div class="moderator-container">
         <header class="moderator-header">
             <h1>Moderator Dashboard</h1>
@@ -154,6 +157,60 @@
             link.click();
             document.body.removeChild(link);
         }
+        
+        // Toast Notification System for Last Use Information
+        function showToast(message, type = 'info', duration = 5000) {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            toast.innerHTML = `
+                <div class="toast-header">
+                    <span class="toast-title">${type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                    <button class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+                </div>
+                <div class="toast-message">${message}</div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            // Auto remove after duration
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.remove();
+                    }
+                }, 300);
+            }, duration);
+        }
+        
+        function checkForLastUseNotification() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const showLastUse = urlParams.get('show_last_use');
+            if (showLastUse === 'true') {
+                {{#if lastUseInfo}}
+                    const lastUseInfo = {
+                        message: "{{lastUseInfo.message}}",
+                        type: "{{lastUseInfo.lastUseType}}" === "unsuccessful" ? "warning" : "info"
+                    };
+                    showToast(lastUseInfo.message, lastUseInfo.type, 5000);
+                {{else}}
+                    showToast('Welcome back! Your account activity has been recorded.', 'info', 5000);
+                {{/if}}
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            checkForLastUseNotification();
+        });
     </script>
 </body>
 </html> 

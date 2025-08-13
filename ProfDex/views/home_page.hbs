@@ -5,6 +5,9 @@
 </head>
 
 <body>
+    <!-- Toast Notification Container for Last Use Information -->
+    <div class="toast-container" id="toastContainer"></div>
+    
     <div class="homepage-container">
         <div class="filter-navbar-container">
             <div class="filter-navbar">
@@ -114,7 +117,73 @@
         
         
     </script>
+    
+    <script>
+        // Toast Notification System for Last Use Information
+        function showToast(message, type = 'info', duration = 5000) {
+            const toastContainer = document.getElementById('toastContainer');
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            // Create toast content
+            toast.innerHTML = `
+                <div class="toast-header">
+                    <div class="toast-title">Last Account Activity</div>
+                    <button class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+                </div>
+                <div class="toast-message">${message}</div>
+            `;
+            
+            // Add toast to container
+            toastContainer.appendChild(toast);
+            
+            // Show toast with animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            // Auto-remove after specified duration
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        if (toast.parentElement) {
+                            toast.remove();
+                        }
+                    }, 300);
+                }
+            }, duration);
+        }
 
+        // Check if we should show last use notification
+        function checkForLastUseNotification() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const showLastUse = urlParams.get('show_last_use');
+            
+            if (showLastUse === 'true') {
+                // Get last use info from server data
+                {{#if lastUseInfo}}
+                    const lastUseInfo = {
+                        message: "{{lastUseInfo.message}}",
+                        type: "{{lastUseInfo.lastUseType}}" === "unsuccessful" ? "warning" : "info"
+                    };
+                    showToast(lastUseInfo.message, lastUseInfo.type, 5000);
+                {{else}}
+                    showToast('Welcome back! Your account activity has been recorded.', 'info', 5000);
+                {{/if}}
+                
+                // Clean up the URL parameter
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        }
 
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            checkForLastUseNotification();
+        });
+    </script>
 </body>
 </html>

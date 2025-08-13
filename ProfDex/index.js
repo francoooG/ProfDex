@@ -55,6 +55,10 @@ const {
     cleanupExpiredTokens,
     validateSecurityAnswer,
     changePassword,
+    reAuthenticateUser,
+    
+    // Account lockout functions
+    recordSuccessfulLogin,
     
     // Security questions configuration
     SECURITY_QUESTIONS,
@@ -369,10 +373,15 @@ async function initializeAdminAccount() {
 app.route('/').get(isLoggedIn, async (req, res) => {
     var data = await getAllProfessorData();
     const userType = req.session.user ? req.session.user.userType : null;
+    
+    // Check if we have last use information to display
+    const lastUseInfo = req.session.lastUseInfo || null;
+    
     res.render(__dirname + '/views' + '/home_page.hbs', {
         data,
         userType,
         loggedInUser: req.session.user,
+        lastUseInfo,
         layout: false
     });
 });
@@ -504,6 +513,10 @@ app.route('/editprofile')
     }
     
     var postData = await getUserPostData(myId);
+    
+    // Check if we have last use information to display
+    const lastUseInfo = req.session.lastUseInfo || null;
+    
     res.render(__dirname + '/views' + '/editprofile_page.hbs', {
         userData,
         studentData,
@@ -514,6 +527,7 @@ app.route('/editprofile')
         subjects,
         professorSubjects: professorSubjects || [],
         userType: req.session.user.userType,
+        lastUseInfo,
         layout: false
     });
 })
@@ -651,24 +665,43 @@ app.route('/login')
                     return;
                 }
 
+                // Check if we have last use information to display
+                if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
+                    // Store last use info in session for display after redirect
+                    req.session.lastUseInfo = loggedInUser.lastUseInfo;
+                }
+
                 const userType = loggedInUser.userType;
                 // Redirect to original destination if available, otherwise to role-specific page
                 const returnTo = req.session.returnTo;
                 if (returnTo && returnTo !== '/login') {
                     delete req.session.returnTo;
-                    res.redirect(returnTo);
+                    // Add last use parameter to the redirect
+                    const separator = returnTo.includes('?') ? '&' : '?';
+                    const lastUseParam = loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify ? `${separator}show_last_use=true` : '';
+                    res.redirect(returnTo + lastUseParam);
                 } else {
+                    // Redirect to role-specific page with last use parameter
+                    let redirectUrl = '';
                     if (userType === 'student') {
-                        res.redirect('/editprofile');
+                        redirectUrl = '/editprofile';
                     } else if (userType === 'professor') {
-                        res.redirect('/');
+                        redirectUrl = '/';
                     } else if (userType === 'manager') {
-                        res.redirect('/moderator');
+                        redirectUrl = '/moderator';
                     } else if (userType === 'administrator') {
-                        res.redirect('/admin');
+                        redirectUrl = '/admin';
                     } else {
-                        res.redirect('/login?error=authentication_failed');
+                        redirectUrl = '/login?error=authentication_failed';
                     }
+                    
+                    // Add last use parameter if needed
+                    if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
+                        const separator = redirectUrl.includes('?') ? '&' : '?';
+                        redirectUrl += `${separator}show_last_use=true`;
+                    }
+                    
+                    res.redirect(redirectUrl);
                 }
             } 
             else {
@@ -705,21 +738,39 @@ app.route('/login')
             if (result.success) {
                 const loggedInUser = await loginUser(registerEmail, registerPassword, req);
                 if (loggedInUser) {
+                    // Check if we have last use information to display
+                    if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
+                        // Store last use info in session for display after redirect
+                        req.session.lastUseInfo = loggedInUser.lastUseInfo;
+                    }
+                    
                     // Redirect to original destination if available, otherwise to role-specific page
                     const returnTo = req.session.returnTo;
                     if (returnTo && returnTo !== '/login') {
                         delete req.session.returnTo;
-                        res.redirect(returnTo);
+                        // Add last use parameter to the redirect
+                        const separator = returnTo.includes('?') ? '&' : '?';
+                        const lastUseParam = loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify ? `${separator}show_last_use=true` : '';
+                        res.redirect(returnTo + lastUseParam);
                     } else {
+                        // Redirect to role-specific page with last use parameter
+                        let redirectUrl = '';
                         if (userType === 'student') {
-                            res.redirect('/editprofile');
+                            redirectUrl = '/editprofile';
                         } else if (userType === 'professor') {
-                            res.redirect('/');
+                            redirectUrl = '/';
                         } else if (userType === 'manager') {
-                            res.redirect('/moderator');
+                            redirectUrl = '/moderator';
                         } else if (userType === 'administrator') {
-                            res.redirect('/admin');
+                            redirectUrl = '/admin';
                         }
+                        
+                        // Add last use parameter if needed
+                        if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
+                            redirectUrl += '?show_last_use=true';
+                        }
+                        
+                        res.redirect(redirectUrl);
                     }
                 } else {
                     res.redirect('/login?error=authentication_failed');
@@ -1484,6 +1535,7 @@ app.route('/moderator')
             studentCount,
             professorCount,
             unassignedCount,
+            lastUseInfo: req.session.lastUseInfo || null,
             layout: false
         };
         
@@ -1547,6 +1599,7 @@ app.route('/admin')
             studentCount,
             professorCount,
             moderatorCount,
+            lastUseInfo: req.session.lastUseInfo || null,
             layout: false
         });
     } catch (error) {
@@ -1669,13 +1722,27 @@ app.route('/admin/login')
             }
             
             if (loggedInUser.userType === 'administrator') {
+                // Check if we have last use information to display
+                if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
+                    // Store last use info in session for display after redirect
+                    req.session.lastUseInfo = loggedInUser.lastUseInfo;
+                }
+                
                 // Redirect to original destination if available, otherwise to admin dashboard
                 const returnTo = req.session.returnTo;
                 if (returnTo && returnTo !== '/admin/login') {
                     delete req.session.returnTo;
-                    res.redirect(returnTo);
+                    // Add last use parameter to the redirect
+                    const separator = returnTo.includes('?') ? '&' : '?';
+                    const lastUseParam = loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify ? `${separator}show_last_use=true` : '';
+                    res.redirect(returnTo + lastUseParam);
                 } else {
-                    res.redirect('/admin');
+                    // Redirect to admin dashboard with last use parameter if needed
+                    let redirectUrl = '/admin';
+                    if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
+                        redirectUrl += '?show_last_use=true';
+                    }
+                    res.redirect(redirectUrl);
                 }
             } else {
                 res.redirect('/admin/login?error=authentication_failed');
@@ -1689,9 +1756,82 @@ app.route('/admin/login')
     }
 });
 
-// Password change route
+// Password change request route (Step 1: Re-authentication)
+app.route('/change-password-request')
+.get(isLoggedIn, (req, res) => {
+    const errors = {};
+    if (req.query.error === 'reauth_failed') {
+        errors.reauth_failed = true;
+    }
+    if (req.query.error === 'account_locked') {
+        errors.account_locked = true;
+        errors.lockout_message = req.query.message ? decodeURIComponent(req.query.message) : '';
+    }
+    if (req.query.error === 'reauth_expired') {
+        errors.reauth_expired = true;
+    }
+    
+    res.render(__dirname + '/views' + '/change_password_request.hbs', { 
+        layout: false, 
+        errors,
+        userType: req.session.user.userType,
+        loggedInUser: req.session.user
+    });
+})
+.post(isLoggedIn, async (req, res) => {
+    try {
+        const { currentPassword } = req.body;
+        
+        // Validate input
+        if (!currentPassword) {
+            res.redirect('/change-password-request?error=reauth_failed');
+            return;
+        }
+        
+        // Re-authenticate user
+        const reAuthResult = await reAuthenticateUser(req.session.user._id, currentPassword);
+        
+        if (reAuthResult.success) {
+            // Store re-authentication status in session
+            req.session.reauthenticated = true;
+            req.session.reauthTimestamp = Date.now();
+            req.session.save();
+            
+            // Redirect to password change form
+            res.redirect('/change-password');
+        } else {
+            if (reAuthResult.error.includes('locked')) {
+                const message = encodeURIComponent(reAuthResult.error);
+                res.redirect(`/change-password-request?error=account_locked&message=${message}`);
+            } else {
+                res.redirect('/change-password-request?error=reauth_failed');
+            }
+        }
+    } catch (error) {
+        console.error('Error during re-authentication:', error);
+        res.redirect('/change-password-request?error=reauth_failed');
+    }
+});
+
+// Password change route (Step 2: Actual password change)
 app.route('/change-password')
 .get(isLoggedIn, async (req, res) => {
+    // Check if user has been re-authenticated
+    if (!req.session.reauthenticated || !req.session.reauthTimestamp) {
+        return res.redirect('/change-password-request');
+    }
+    
+    // Check if re-authentication is still valid (15 minutes)
+    const reauthAge = Date.now() - req.session.reauthTimestamp;
+    const reauthTimeout = 15 * 60 * 1000; // 15 minutes
+    
+    if (reauthAge > reauthTimeout) {
+        // Clear expired re-authentication
+        delete req.session.reauthenticated;
+        delete req.session.reauthTimestamp;
+        return res.redirect('/change-password-request?error=reauth_expired');
+    }
+    
     const errors = {};
     if (req.query.error === 'validation_error') {
         errors.validation_error = true;
@@ -1723,10 +1863,10 @@ app.route('/change-password')
 })
 .post(isLoggedIn, async (req, res) => {
     try {
-        const { currentPassword, newPassword, confirmPassword } = req.body;
+        const { newPassword, confirmPassword } = req.body;
         
         // Validate input
-        if (!currentPassword || !newPassword || !confirmPassword) {
+        if (!newPassword || !confirmPassword) {
             res.redirect('/change-password?error=validation_error');
             return;
         }
@@ -1737,15 +1877,17 @@ app.route('/change-password')
             return;
         }
         
-        // Change password using the backend function
-        const result = await changePassword(req.session.user._id, currentPassword, newPassword);
+        // Since re-authentication was already done, we can proceed with password change
+        // We'll use a placeholder for current password since it's already verified
+        const result = await changePassword(req.session.user._id, 'REAUTHENTICATED', newPassword);
         
         if (result.success) {
+            // Clear re-authentication status after successful password change
+            delete req.session.reauthenticated;
+            delete req.session.reauthTimestamp;
             res.redirect('/change-password?success=true');
         } else {
-            if (result.error === 'Current password is incorrect') {
-                res.redirect('/change-password?error=current_password_error');
-            } else if (result.error.includes('used recently')) {
+            if (result.error.includes('used recently')) {
                 res.redirect('/change-password?error=password_history_error');
             } else if (result.error === 'Password validation failed') {
                 const details = encodeURIComponent(result.details.join(', '));

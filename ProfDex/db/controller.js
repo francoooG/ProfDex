@@ -635,7 +635,8 @@ async function recordFailedLoginAttempt(userId, email) {
                 failedLoginAttempts: newFailedAttempts,
                 accountLocked: true,
                 lockoutExpiresAt: lockoutExpiresAt,
-                lastFailedLoginAt: now
+                lastFailedLoginAt: now,
+                lastUnsuccessfulLoginAt: now
             });
 
             console.log(`Account locked for user: ${email} due to ${newFailedAttempts} failed attempts. Lockout expires at: ${lockoutExpiresAt}`);
@@ -648,11 +649,96 @@ async function recordFailedLoginAttempt(userId, email) {
             // Just update the failed attempts count
             await User.findByIdAndUpdate(userId, {
                 failedLoginAttempts: newFailedAttempts,
-                lastFailedLoginAt: now
+                lastFailedLoginAt: now,
+                lastUnsuccessfulLoginAt: now
             });
         }
     } catch (error) {
         console.error('Error recording failed login attempt:', error);
+    }
+}
+
+// Record successful login and check for last use notification
+async function recordSuccessfulLogin(userId, loginTime) {
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            return { shouldNotify: false };
+        }
+
+        // Store the previous successful login time before updating
+        const previousSuccessfulLogin = user.lastSuccessfulLoginAt;
+        
+        // Update last successful login time
+        user.lastSuccessfulLoginAt = loginTime;
+        user.lastUseNotified = false; // Reset notification flag for next login
+        await user.save();
+
+        // Check if we should notify about last use
+        if (previousSuccessfulLogin && user.lastUnsuccessfulLoginAt) {
+            // Determine which was more recent: last successful or last unsuccessful
+            const lastSuccessful = previousSuccessfulLogin.getTime();
+            const lastUnsuccessful = user.lastUnsuccessfulLoginAt.getTime();
+            
+            if (lastUnsuccessful > lastSuccessful) {
+                // Last use was unsuccessful, notify about it
+                return {
+                    shouldNotify: true,
+                    lastUseType: 'unsuccessful',
+                    lastUseTime: user.lastUnsuccessfulLoginAt,
+                    message: `Your last login attempt was unsuccessful on ${formatLastUseTime(user.lastUnsuccessfulLoginAt)}`
+                };
+            } else {
+                // Last use was successful, notify about it
+                return {
+                    shouldNotify: true,
+                    lastUseType: 'successful',
+                    lastUseTime: previousSuccessfulLogin,
+                    message: `Your last successful login was on ${formatLastUseTime(previousSuccessfulLogin)}`
+                };
+            }
+        } else if (previousSuccessfulLogin) {
+            // Only successful login history exists
+            return {
+                shouldNotify: true,
+                lastUseType: 'successful',
+                lastUseTime: previousSuccessfulLogin,
+                message: `Your last successful login was on ${formatLastUseTime(previousSuccessfulLogin)}`
+            };
+        } else if (user.lastUnsuccessfulLoginAt) {
+            // Only unsuccessful login history exists
+            return {
+                shouldNotify: true,
+                lastUseType: 'unsuccessful',
+                lastUseTime: user.lastUnsuccessfulLoginAt,
+                message: `Your last login attempt was unsuccessful on ${formatLastUseTime(user.lastUnsuccessfulLoginAt)}`
+            };
+        }
+
+        // No previous use to report
+        return { shouldNotify: false };
+    } catch (error) {
+        console.error('Error recording successful login:', error);
+        return { shouldNotify: false };
+    }
+}
+
+// Helper function to format last use time in a user-friendly way
+function formatLastUseTime(date) {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+    if (diffDays > 0) {
+        return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    } else if (diffHours > 0) {
+        return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    } else if (diffMinutes > 0) {
+        return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+    } else {
+        return 'just now';
     }
 }
 
@@ -1068,6 +1154,19 @@ var userSchema = new Schema({
     lastFailedLoginAt: {
         type: Date,
         default: null
+    },
+    // Last use tracking fields for 2.1.12
+    lastSuccessfulLoginAt: {
+        type: Date,
+        default: null
+    },
+    lastUnsuccessfulLoginAt: {
+        type: Date,
+        default: null
+    },
+    lastUseNotified: {
+        type: Boolean,
+        default: false
     }
 });
 var User = mongoose.model("Users", userSchema);
@@ -1776,6 +1875,15 @@ async function loginUser(email, password, req) {
         // Reset account lockout on successful login
         await resetAccountLockout(existingUser._id);
 
+        // Record successful login and check for last use notification
+        const now = new Date();
+        const lastUseInfo = await recordSuccessfulLogin(existingUser._id, now);
+        
+        // Add last use information to userData if notification is needed
+        if (lastUseInfo.shouldNotify) {
+            userData.lastUseInfo = lastUseInfo;
+        }
+
         return userData;
     } 
     catch (error) {
@@ -1878,28 +1986,64 @@ function checkPasswordAge(user) {
     return { isValid: true };
 }
 
-// Enhanced password change function with all complexity requirements
-async function changePassword(userId, currentPassword, newPassword) {
+// Enhanced re-authentication function for critical operations
+async function reAuthenticateUser(userId, password) {
     try {
-        // Get user
         const user = await User.findById(userId);
         if (!user) {
             return { success: false, error: 'User not found' };
         }
+
+        // Verify the provided password
+        const isValidPassword = await verifyPassword(password, user.password);
+        if (!isValidPassword) {
+            return { success: false, error: 'Invalid password' };
+        }
+
+        // Check if account is locked
+        const lockoutCheck = await checkAccountLockout(userId);
+        if (lockoutCheck.isLocked) {
+            return { 
+                success: false, 
+                error: `Account is locked. Please try again after ${lockoutCheck.remainingMinutes} minutes.` 
+            };
+        }
+
+        return { success: true, user };
+    } catch (error) {
+        console.error('Error during re-authentication:', error);
+        return { success: false, error: 'Re-authentication failed' };
+    }
+}
+
+// Enhanced password change function with re-authentication
+async function changePassword(userId, currentPassword, newPassword) {
+    try {
+        let user;
         
-        // Verify current password
-        const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password);
-        if (!isCurrentPasswordValid) {
-            return { success: false, error: 'Current password is incorrect' };
+        // Step 1: Re-authenticate user (unless already re-authenticated)
+        if (currentPassword === 'REAUTHENTICATED') {
+            // User has already been re-authenticated, just get the user
+            user = await User.findById(userId);
+            if (!user) {
+                return { success: false, error: 'User not found' };
+            }
+        } else {
+            // Perform re-authentication
+            const reAuthResult = await reAuthenticateUser(userId, currentPassword);
+            if (!reAuthResult.success) {
+                return { success: false, error: reAuthResult.error };
+            }
+            user = reAuthResult.user;
         }
         
-        // Check password age requirement
-        const ageCheck = checkPasswordAge(user);
+        // Step 2: Check password age requirement
+        const ageCheck = await checkPasswordAge(userId);
         if (!ageCheck.isValid) {
             return { success: false, error: ageCheck.error };
         }
         
-        // Validate new password strength
+        // Step 3: Validate new password strength
         const passwordValidation = validatePasswordStrength(newPassword);
         if (!passwordValidation.isValid) {
             return { 
@@ -1909,25 +2053,25 @@ async function changePassword(userId, currentPassword, newPassword) {
             };
         }
         
-        // Check password history
+        // Step 4: Check password history
         const historyCheck = await checkPasswordHistory(userId, newPassword);
         if (!historyCheck.isValid) {
             return { success: false, error: historyCheck.error };
         }
         
-        // Check for length-based patterns
+        // Step 5: Check for length-based patterns
         const lengthPatternCheck = await checkLengthPatterns(userId, newPassword.length);
         if (!lengthPatternCheck.isValid) {
             return { success: false, error: lengthPatternCheck.error };
         }
         
-        // Hash new password
+        // Step 6: Hash new password
         const hashedNewPassword = await hashPassword(newPassword);
         
-        // Store old password in history before updating
+        // Step 7: Store old password in history before updating
         await addPasswordToHistory(userId, user.password);
         
-        // Update user password and timestamp
+        // Step 8: Update user password and timestamp
         user.password = hashedNewPassword;
         user.passwordChangedAt = new Date();
         await user.save();
@@ -2024,6 +2168,7 @@ module.exports = {
     // Account lockout functions
     checkAccountLockout,
     recordFailedLoginAttempt,
+    recordSuccessfulLogin,
     resetAccountLockout,
     unlockAccount,
     
@@ -2037,6 +2182,7 @@ module.exports = {
     getSecurityQuestions,
     cleanupExpiredTokens,
     validateSecurityAnswer,
+    reAuthenticateUser,
     
     // Security questions and reset token models
     PasswordResetToken,
