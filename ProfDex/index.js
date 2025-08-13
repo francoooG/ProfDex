@@ -54,6 +54,7 @@ const {
     getSecurityQuestions,
     cleanupExpiredTokens,
     validateSecurityAnswer,
+    changePassword,
     
     // Security questions configuration
     SECURITY_QUESTIONS,
@@ -1685,6 +1686,73 @@ app.route('/admin/login')
     } catch (error) {
         console.error('Error during admin login: ', error);
         res.redirect('/admin/login?error=authentication_failed');
+    }
+});
+
+// Password change route
+app.route('/change-password')
+.get(isLoggedIn, async (req, res) => {
+    const errors = {};
+    if (req.query.error === 'validation_error') {
+        errors.validation_error = true;
+    }
+    if (req.query.error === 'current_password_error') {
+        errors.current_password_error = true;
+    }
+    if (req.query.error === 'password_history_error') {
+        errors.password_history_error = true;
+    }
+    if (req.query.error === 'password_validation_error') {
+        errors.password_validation_error = true;
+        errors.password_validation_details = req.query.details ? decodeURIComponent(req.query.details) : '';
+    }
+    if (req.query.success === 'true') {
+        errors.success = true;
+    }
+    
+    res.render(__dirname + '/views' + '/change_password.hbs', { 
+        layout: false, 
+        errors,
+        userType: req.session.user.userType,
+        loggedInUser: req.session.user
+    });
+})
+.post(isLoggedIn, async (req, res) => {
+    try {
+        const { currentPassword, newPassword, confirmPassword } = req.body;
+        
+        // Validate input
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            res.redirect('/change-password?error=validation_error');
+            return;
+        }
+        
+        // Check if passwords match
+        if (newPassword !== confirmPassword) {
+            res.redirect('/change-password?error=validation_error');
+            return;
+        }
+        
+        // Change password using the backend function
+        const result = await changePassword(req.session.user._id, currentPassword, newPassword);
+        
+        if (result.success) {
+            res.redirect('/change-password?success=true');
+        } else {
+            if (result.error === 'Current password is incorrect') {
+                res.redirect('/change-password?error=current_password_error');
+            } else if (result.error.includes('used recently')) {
+                res.redirect('/change-password?error=password_history_error');
+            } else if (result.error === 'Password validation failed') {
+                const details = encodeURIComponent(result.details.join(', '));
+                res.redirect(`/change-password?error=password_validation_error&details=${details}`);
+            } else {
+                res.redirect('/change-password?error=validation_error');
+            }
+        }
+    } catch (error) {
+        console.error('Error changing password:', error);
+        res.redirect('/change-password?error=validation_error');
     }
 });
 
