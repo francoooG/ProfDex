@@ -2,9 +2,81 @@
 <head>
     <link rel="stylesheet" href="navbar.css">
     <link rel="stylesheet" href="LR_page.css">
+    <style>
+        /* Toast Notification Styles */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .toast {
+            background: #28a745;
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+            transform: translateY(-100px);
+            transition: transform 0.4s ease;
+            max-width: 500px;
+            font-size: 16px;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .toast.show {
+            transform: translateY(0);
+        }
+        
+        .toast.success {
+            background: #28a745;
+        }
+        
+        .toast.error {
+            background: #dc3545;
+        }
+        
+        .toast-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .toast-title {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .toast-message {
+            margin: 0;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+    </style>
 </head>
 
 <body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <div class="homepage-container">
         <div class="login-container">
             <div class="login-input-container">
@@ -14,6 +86,9 @@
                     <input type="password" class="password" name="password" placeholder="Password" required>
                     <button type="submit" class="userlogon">Login</button>
                 </form>
+                <div class="forgot-password-link">
+                    <a href="/forgot-password">Forgot Password?</a>
+                </div>
                 {{#if errors.password_mismatch}}
                     <b class="password-error">Passwords do not match.</b>
                 {{/if}}
@@ -46,20 +121,28 @@
                     
                     <!-- Password Requirements Display -->
                     <div class="password-requirements" id="passwordRequirements">
-                        <h4>Password Requirements:</h4>
-                        <ul>
-                            <li id="length-check">At least 12 characters long (recommended: 16+, strong: 20+)</li>
-                            <li id="length-bonus" class="info">Longer passwords get bonus security points</li>
-                            <li id="uppercase-check">At least one uppercase letter (A-Z)</li>
-                            <li id="lowercase-check">At least one lowercase letter (a-z)</li>
-                            <li id="number-check">At least one number (0-9)</li>
-                            <li id="special-check">At least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)</li>
-                            <li id="complexity-check">Meet at least 3 complexity criteria</li>
-                            <li id="no-sequences">No sequential characters (123, abc, qwe, etc.)</li>
-                            <li id="no-repeats">No more than 2 consecutive repeated characters</li>
-                            <li id="no-patterns">No keyboard patterns (qwerty, asdfgh, etc.)</li>
-                            <li id="no-common">Not a common password</li>
-                        </ul>
+                        <div id="initial-message" class="initial-message">
+                            <span class="info-icon">ℹ</span> Longer passwords get bonus security points
+                        </div>
+                        <div id="requirements-list" style="display: none;">
+                            <h4>Password Requirements:</h4>
+                            <ul>
+                                <li id="length-check">At least 12 characters long (recommended: 16+, strong: 20+)</li>
+                                <li id="length-bonus" class="info">Longer passwords get bonus security points</li>
+                                <li id="uppercase-check">At least one uppercase letter (A-Z)</li>
+                                <li id="lowercase-check">At least one lowercase letter (a-z)</li>
+                                <li id="number-check">At least one number (0-9)</li>
+                                <li id="special-check">At least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)</li>
+                                <li id="complexity-check">Meet at least 3 complexity criteria</li>
+                                <li id="no-sequences">No sequential characters (123, abc, qwe, etc.)</li>
+                                <li id="no-repeats">No more than 2 consecutive repeated characters</li>
+                                <li id="no-patterns">No keyboard patterns (qwerty, asdfgh, etc.)</li>
+                                <li id="no-common">Not a common password</li>
+                            </ul>
+                        </div>
+                        <div id="success-message" class="success-indicator" style="display: none;">
+                            <span class="check-icon">✓</span> Password is strong
+                        </div>
                         <div class="password-strength-meter">
                             <div class="strength-label">Password Strength:</div>
                             <div class="strength-bar">
@@ -81,17 +164,21 @@
                     <!-- Student fields -->
                     <div id="studentFields" style="display: none;">
                         <input type="text" class="registerinput" name="studentID" placeholder="Student ID"><br>
-                        <select class="registerinput" name="course" required>
+                        <select class="registerinput" name="course">
                             <option value="">Select a Course</option>
-                            {{#each courses}}
-                                <option value="{{_id}}">{{name}} ({{code}})</option>
-                            {{/each}}
+                            {{#if courses}}
+                                {{#each courses}}
+                                    <option value="{{_id}}">{{name}} ({{code}})</option>
+                                {{/each}}
+                            {{else}}
+                                <option value="" disabled>No courses available</option>
+                            {{/if}}
                         </select><br>
                     </div>
                     
                     <!-- Professor fields -->
                     <div id="professorFields" style="display: none;">
-                        <input type="text" class="registerinput" name="teacherID" placeholder="Teacher ID" required><br>
+                        <input type="text" class="registerinput" name="teacherID" placeholder="Teacher ID"><br>
                         <div class="subject-selector">
                             <label for="subjects">Subjects (optional):</label><br>
                             <div class="subjects-checklist">
@@ -159,27 +246,30 @@
             } else {
                 // Check password requirements
                 const passwordChecks = validatePassword(password);
-                const allPasswordRequirementsMet = Object.values(passwordChecks).every(Boolean);
+                const coreRequirements = ['length', 'uppercase', 'lowercase', 'number', 'special', 'complexity', 'sequences', 'repeats', 'patterns', 'common'];
+                const allPasswordRequirementsMet = coreRequirements.every(req => passwordChecks[req] === true);
                 
                 if (!allPasswordRequirementsMet) {
                     isValid = false;
                     errorMessage = 'Password does not meet all requirements';
-                }
-            }
-            } else if (userType === 'student') {
-                const studentID = document.querySelector('input[name="studentID"]').value.trim();
-                const course = document.querySelector('select[name="course"]').value;
-                
-                if (!studentID || !course) {
-                    isValid = false;
-                    errorMessage = 'Please fill student ID and select a course';
-                }
-            } else if (userType === 'professor') {
-                const teacherID = document.querySelector('input[name="teacherID"]').value.trim();
-                
-                if (!teacherID) {
-                    isValid = false;
-                    errorMessage = 'Please fill teacher ID';
+                } else {
+                    // Additional validation based on user type
+                    if (userType === 'student') {
+                        const studentID = document.querySelector('input[name="studentID"]').value.trim();
+                        const course = document.querySelector('select[name="course"]').value;
+                        
+                        if (!studentID || !course) {
+                            isValid = false;
+                            errorMessage = 'Please fill student ID and select a course';
+                        }
+                    } else if (userType === 'professor') {
+                        const teacherID = document.querySelector('input[name="teacherID"]').value.trim();
+                        
+                        if (!teacherID) {
+                            isValid = false;
+                            errorMessage = 'Please fill teacher ID';
+                        }
+                    }
                 }
             }
 
@@ -215,20 +305,42 @@
             const professorFields = document.getElementById('professorFields');
             const courseSelect = document.querySelector('select[name="course"]');
             const teacherIDInput = document.querySelector('input[name="teacherID"]');
+            const studentIDInput = document.querySelector('input[name="studentID"]');
 
+            // Hide all fields first
             studentFields.style.display = 'none';
             professorFields.style.display = 'none';
 
-            if (courseSelect) courseSelect.required = false;
-            if (teacherIDInput) teacherIDInput.required = false;
+            // Remove required attributes from all role-specific fields
+            if (courseSelect) {
+                courseSelect.required = false;
+                courseSelect.removeAttribute('required');
+            }
+            if (teacherIDInput) {
+                teacherIDInput.required = false;
+                teacherIDInput.removeAttribute('required');
+            }
+            if (studentIDInput) {
+                studentIDInput.required = false;
+                studentIDInput.removeAttribute('required');
+            }
 
             if (userType === 'student') {
                 studentFields.style.display = 'block';
-                if (courseSelect) courseSelect.required = true;
-                if (teacherIDInput) teacherIDInput.required = false;
+                if (courseSelect) {
+                    courseSelect.required = true;
+                    courseSelect.setAttribute('required', 'required');
+                }
+                if (studentIDInput) {
+                    studentIDInput.required = true;
+                    studentIDInput.setAttribute('required', 'required');
+                }
             } else if (userType === 'professor') {
                 professorFields.style.display = 'block';
-                if (teacherIDInput) teacherIDInput.required = true;
+                if (teacherIDInput) {
+                    teacherIDInput.required = true;
+                    teacherIDInput.setAttribute('required', 'required');
+                }
             }
 
             setTimeout(checkFormValidity, 100);
@@ -237,25 +349,139 @@
 
 
         document.getElementById('registerForm').addEventListener('submit', function(e) {
-            const userType = document.getElementById('userType').value;
-            const formData = {
-                firstName: document.querySelector('input[name="registerFirstName"]').value.trim(),
-                lastName: document.querySelector('input[name="registerLastName"]').value.trim(),
-                email: document.querySelector('input[name="registerEmail"]').value.trim(),
-                password: document.querySelector('input[name="registerPassword"]').value,
-                confirmPassword: document.querySelector('input[name="confirmPassword"]').value,
-                userType: userType
-            };
-            if (userType === 'student') {
-                formData.studentID = document.querySelector('input[name="studentID"]').value.trim();
-                formData.course = document.querySelector('select[name="course"]').value;
-            } else if (userType === 'professor') {
-                formData.teacherID = document.querySelector('input[name="teacherID"]').value.trim();
-                const checkedSubjects = document.querySelectorAll('input[name="subjects"]:checked');
-                formData.subjects = Array.from(checkedSubjects).map(cb => ({ id: cb.value, name: cb.getAttribute('data-name') }));
+            e.preventDefault(); // Prevent default form submission
+            
+            // Validate password requirements
+            const password = document.querySelector('input[name="registerPassword"]').value;
+            const passwordChecks = validatePassword(password);
+            const coreRequirements = ['length', 'uppercase', 'lowercase', 'number', 'special', 'complexity', 'sequences', 'repeats', 'patterns', 'common'];
+            const allPasswordRequirementsMet = coreRequirements.every(req => passwordChecks[req] === true);
+            
+            if (!allPasswordRequirementsMet) {
+                alert('Password does not meet all requirements. Please check the password requirements above.');
+                return;
             }
-            console.log('Register form data:', formData);
+            
+            // Check if passwords match
+            const confirmPassword = document.querySelector('input[name="confirmPassword"]').value;
+            if (password !== confirmPassword) {
+                alert('Passwords do not match.');
+                return;
+            }
+            
+            // Check if all required fields are filled
+            const userType = document.getElementById('userType').value;
+            if (!userType) {
+                alert('Please select a user type.');
+                return;
+            }
+            
+            // Additional validation based on user type
+            if (userType === 'student') {
+                const studentID = document.querySelector('input[name="studentID"]').value.trim();
+                const course = document.querySelector('select[name="course"]').value;
+                if (!studentID || !course) {
+                    alert('Please fill student ID and select a course.');
+                    return;
+                }
+            } else if (userType === 'professor') {
+                const teacherID = document.querySelector('input[name="teacherID"]').value.trim();
+                if (!teacherID) {
+                    alert('Please fill teacher ID.');
+                    return;
+                }
+            }
+            
+            // If all validation passes, submit the form using fetch
+            console.log('Form validation passed, submitting...');
+            
+            // Collect form data
+            const formData = new FormData(this);
+            
+            // Convert FormData to URLSearchParams for POST request
+            const urlParams = new URLSearchParams();
+            for (let [key, value] of formData.entries()) {
+                urlParams.append(key, value);
+            }
+            
+            console.log('Submitting form data:', Object.fromEntries(urlParams));
+            
+            // Submit the form data
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: urlParams
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response redirected:', response.redirected);
+                
+                if (response.redirected) {
+                    // If the server redirects, follow the redirect
+                    window.location.href = response.url;
+                } else {
+                    // If no redirect, reload the page to show any error messages
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting form:', error);
+                alert('An error occurred while submitting the form. Please try again.');
+            });
         });
+
+        // Function to check for sequential characters
+        function checkSequentialCharacters(password) {
+            // Check for numeric sequences (3+ consecutive digits)
+            for (let i = 0; i <= password.length - 3; i++) {
+                const seq = password.substr(i, 3);
+                if (/^\d{3}$/.test(seq)) {
+                    const num1 = parseInt(seq[0]);
+                    const num2 = parseInt(seq[1]);
+                    const num3 = parseInt(seq[2]);
+                    
+                    // Check if they form a sequence (ascending or descending)
+                    if ((num2 === num1 + 1 && num3 === num2 + 1) || 
+                        (num2 === num1 - 1 && num3 === num2 - 1)) {
+                        return true; // Found sequential numbers
+                    }
+                }
+            }
+            
+            // Check for alphabetic sequences (3+ consecutive letters)
+            for (let i = 0; i <= password.length - 3; i++) {
+                const seq = password.substr(i, 3);
+                if (/^[a-zA-Z]{3}$/.test(seq)) {
+                    const char1 = seq[0].toLowerCase().charCodeAt(0);
+                    const char2 = seq[1].toLowerCase().charCodeAt(0);
+                    const char3 = seq[2].toLowerCase().charCodeAt(0);
+                    
+                    // Check if they form a sequence (ascending or descending)
+                    if ((char2 === char1 + 1 && char3 === char2 + 1) || 
+                        (char2 === char1 - 1 && char3 === char2 - 1)) {
+                        return true; // Found sequential letters
+                    }
+                }
+            }
+            
+            // Check for common keyboard patterns
+            const keyboardPatterns = [
+                'qwe', 'wer', 'ert', 'rty', 'tyu', 'yui', 'uio', 'iop',
+                'asd', 'sdf', 'dfg', 'fgh', 'ghj', 'hjk', 'jkl',
+                'zxc', 'xcv', 'cvb', 'vbn', 'bnm',
+                'qaz', 'wsx', 'edc', 'rfv', 'tgb', 'yhn', 'ujm', 'ikl'
+            ];
+            
+            for (const pattern of keyboardPatterns) {
+                if (password.toLowerCase().includes(pattern)) {
+                    return true; // Found keyboard pattern
+                }
+            }
+            
+            return false; // No sequential characters found
+        }
 
         // Enhanced password validation function with length-based scoring
         function validatePassword(password) {
@@ -271,7 +497,7 @@
                 lowercase: /[a-z]/.test(password),
                 number: /\d/.test(password),
                 special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
-                sequences: !/(123|234|345|456|789|012|abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz|qwe|wer|ert|rty|tyu|yui|uio|iop|asd|sdf|dfg|fgh|ghj|hjk|jkl|zxc|xcv|cvb|vbn|bnm)/i.test(password),
+                sequences: !checkSequentialCharacters(password),
                 repeats: !/(.)\1{2,}/.test(password), // No more than 2 consecutive repeated characters
                 patterns: !/(qwerty|asdfgh|zxcvbn|123456|654321|qazwsx|edcrfv|tgbyhn|ujmikl|plokij)/i.test(password),
                 common: !/^(password|123456|password123|admin|user|test|welcome|monkey|dragon|master|letmein|login|abc123|qwerty|football|baseball|superman|batman|trustno1|shadow|michael|jordan|harley|ranger|buster|thomas|tigger|robert|soccer|test123|guest|info|adm|mysql|user1|administrator)$/i.test(password)
@@ -298,6 +524,9 @@
             checks.lengthScore = lengthScore;
             checks.totalScore = complexityScore + lengthScore;
             
+            // Debug logging to see what's happening
+            console.log('Password validation:', { password, checks, allValid: Object.values(checks).every(Boolean) });
+            
             return checks;
         }
         
@@ -305,41 +534,79 @@
         function updatePasswordRequirements(password) {
             const checks = validatePassword(password);
             
-            // Update each requirement indicator
-            document.getElementById('length-check').className = checks.length ? 'valid' : 'invalid';
-            document.getElementById('uppercase-check').className = checks.uppercase ? 'valid' : 'invalid';
-            document.getElementById('lowercase-check').className = checks.lowercase ? 'valid' : 'invalid';
-            document.getElementById('number-check').className = checks.number ? 'valid' : 'invalid';
-            document.getElementById('special-check').className = checks.special ? 'valid' : 'invalid';
-            document.getElementById('complexity-check').className = checks.complexity ? 'valid' : 'invalid';
-            document.getElementById('no-sequences').className = checks.sequences ? 'valid' : 'invalid';
-            document.getElementById('no-repeats').className = checks.repeats ? 'valid' : 'invalid';
-            document.getElementById('no-patterns').className = checks.patterns ? 'valid' : 'invalid';
-            document.getElementById('no-common').className = checks.common ? 'valid' : 'invalid';
+            const initialMessage = document.getElementById('initial-message');
+            const requirementsList = document.getElementById('requirements-list');
+            const successMessage = document.getElementById('success-message');
             
-            // Update length bonus indicator
-            const lengthBonusElement = document.getElementById('length-bonus');
-            if (lengthBonusElement) {
-                if (checks.lengthStrong) {
-                    lengthBonusElement.className = 'valid';
-                    lengthBonusElement.textContent = 'Excellent! Password length provides maximum security bonus';
-                } else if (checks.lengthRecommended) {
-                    lengthBonusElement.className = 'valid';
-                    lengthBonusElement.textContent = 'Good! Password length provides security bonus';
-                } else if (checks.length) {
-                    lengthBonusElement.className = 'info';
-                    lengthBonusElement.textContent = 'Longer passwords get bonus security points';
-                } else {
-                    lengthBonusElement.className = 'invalid';
-                    lengthBonusElement.textContent = 'Password is too short for security bonus';
+            // Check if all core password requirements are met (exclude scoring properties)
+            const coreRequirements = ['length', 'uppercase', 'lowercase', 'number', 'special', 'complexity', 'sequences', 'repeats', 'patterns', 'common'];
+            const allValid = coreRequirements.every(req => checks[req] === true);
+            
+            // Debug logging
+            console.log('updatePasswordRequirements called with:', { 
+                password, 
+                passwordLength: password.length, 
+                allValid, 
+                coreRequirements: coreRequirements.map(req => ({ req, value: checks[req] })),
+                checks 
+            });
+            
+            if (password.length === 0) {
+                // Initial state - show initial message
+                initialMessage.style.display = 'block';
+                requirementsList.style.display = 'none';
+                successMessage.style.display = 'none';
+            } else if (allValid) {
+                // All requirements met - show success message
+                initialMessage.style.display = 'none';
+                requirementsList.style.display = 'none';
+                successMessage.style.display = 'block';
+            } else {
+                // Some requirements not met - show only one error
+                console.log('Showing requirements list with errors');
+                initialMessage.style.display = 'none';
+                requirementsList.style.display = 'block';
+                successMessage.style.display = 'none';
+                
+                // Reset all to valid first
+                document.getElementById('length-check').className = 'valid';
+                document.getElementById('uppercase-check').className = 'valid';
+                document.getElementById('lowercase-check').className = 'valid';
+                document.getElementById('number-check').className = 'valid';
+                document.getElementById('special-check').className = 'valid';
+                document.getElementById('complexity-check').className = 'valid';
+                document.getElementById('no-sequences').className = 'valid';
+                document.getElementById('no-repeats').className = 'valid';
+                document.getElementById('no-patterns').className = 'valid';
+                document.getElementById('no-common').className = 'valid';
+                
+                // Priority order for showing errors (most important/common first)
+                const errorPriority = [
+                    { id: 'length-check', check: checks.length, message: 'Password is too short' },
+                    { id: 'uppercase-check', check: checks.uppercase, message: 'Missing uppercase letter' },
+                    { id: 'lowercase-check', check: checks.lowercase, message: 'Missing lowercase letter' },
+                    { id: 'number-check', check: checks.number, message: 'Missing number' },
+                    { id: 'special-check', check: checks.special, message: 'Missing special character' },
+                    { id: 'complexity-check', check: checks.complexity, message: 'Insufficient complexity' },
+                    { id: 'no-sequences', check: checks.sequences, message: 'Contains sequential characters' },
+                    { id: 'no-repeats', check: checks.repeats, message: 'Too many repeated characters' },
+                    { id: 'no-patterns', check: checks.patterns, message: 'Contains keyboard patterns' },
+                    { id: 'no-common', check: checks.common, message: 'Too common password' }
+                ];
+                
+                // Show only the first unmet requirement
+                for (const error of errorPriority) {
+                    if (!error.check) {
+                        console.log('Setting error for:', error.id, error.message);
+                        document.getElementById(error.id).className = 'invalid';
+                        break; // Only show one error
+                    }
                 }
             }
             
             // Update strength meter
             updateStrengthMeter(checks);
             
-            // Check if all requirements are met
-            const allValid = Object.values(checks).every(Boolean);
             return allValid;
         }
         
@@ -380,6 +647,17 @@
         
         // Add password validation listener
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing form...');
+            
+            // Debug: Check if courses are available
+            const courseSelect = document.querySelector('select[name="course"]');
+            if (courseSelect) {
+                console.log('Course select found, options:', courseSelect.options.length);
+                for (let i = 0; i < courseSelect.options.length; i++) {
+                    console.log(`Option ${i}:`, courseSelect.options[i].text, courseSelect.options[i].value);
+                }
+            }
+            
             const passwordField = document.getElementById('passwordField');
             if (passwordField) {
                 passwordField.addEventListener('input', function() {
@@ -393,7 +671,48 @@
             
             addFormValidationListeners();
             checkFormValidity();
+            
+            // Check for password reset success and show toast
+            {{#if success}}
+                if ('{{success}}' === 'password_reset') {
+                    showToast('Success!', 'Password reset successfully! You can now login with your new password.', 'success');
+                }
+            {{/if}}
         });
+        
+        // Toast notification functions
+        function showToast(title, message, type = 'success') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            toast.innerHTML = `
+                <div class="toast-header">
+                    <span class="toast-title">${title}</span>
+                    <button class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+                </div>
+                <p class="toast-message">${message}</p>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Show the toast with animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        if (toast.parentElement) {
+                            toast.remove();
+                        }
+                    }, 300);
+                }
+            }, 3000);
+        }
     </script>
 
 </body>

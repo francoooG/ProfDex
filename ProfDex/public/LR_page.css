@@ -271,6 +271,42 @@ b {
     max-width: 100%;
 }
 
+/* Initial message styling */
+.initial-message {
+    color: #3498db;
+    font-style: italic;
+    font-size: 14px;
+    text-align: center;
+    padding: 10px;
+    background-color: #ebf3fd;
+    border-radius: 5px;
+    border: 1px solid #b3d9ff;
+}
+
+.info-icon {
+    font-weight: bold;
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+/* Success indicator styling */
+.success-indicator {
+    color: #28a745;
+    font-weight: bold;
+    font-size: 14px;
+    text-align: center;
+    padding: 10px;
+    background-color: #d4edda;
+    border-radius: 5px;
+    border: 1px solid #c3e6cb;
+}
+
+.check-icon {
+    font-weight: bold;
+    margin-right: 8px;
+    font-size: 16px;
+}
+
 .password-requirements h4 {
     color: #333;
     margin-bottom: 10px;
@@ -421,4 +457,34 @@ b {
     .strength-text {
         font-size: 11px;
     }
+}
+
+/* Forgot password link styles */
+.forgot-password-link {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.forgot-password-link a {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.3s;
+}
+
+.forgot-password-link a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* Success message styles */
+.success-message {
+    color: #155724;
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    text-align: center;
 }

@@ -120,23 +120,47 @@
                             </div>
                             {{/if}}
 
-                            {{#if subjects}}
+                            {{#if (eq userType 'professor')}}
                             <div class="form-row">
                                 <div class="form-group full-width">
                                     <label for="subjects">Subjects</label>
-                                    <select id="subjects" class="form-input" name="subjects" multiple>
-                                        {{#each subjects}}
-                                            <option value="{{_id}}">{{name}} ({{code}})</option>
-                                        {{/each}}
-                                    </select>
-                                    <div class="form-help">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                                            <line x1="12" y1="17" x2="12.01" y2="17"/>
-                                        </svg>
-                                        <span>Hold Ctrl (or Cmd on Mac) to select multiple subjects</span>
-                                    </div>
+                                    {{#if professorSubjects.length}}
+                                        <select id="subjects" class="form-input" name="subjects" multiple>
+                                            {{#each subjects}}
+                                                <option value="{{_id}}" {{#if (in _id ../professorSubjects)}}selected{{/if}}>{{name}} ({{code}})</option>
+                                            {{/each}}
+                                        </select>
+                                        <div class="form-help">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                            </svg>
+                                            <span>Hold Ctrl (or Cmd on Mac) to select multiple subjects</span>
+                                        </div>
+                                    {{else}}
+                                        <div class="no-subjects-message">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                            </svg>
+                                            <span>The professor has chosen not to display any information.</span>
+                                        </div>
+                                        <div class="form-help">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                            </svg>
+                                            <span>You can select subjects below to display them</span>
+                                        </div>
+                                        <select id="subjects" class="form-input" name="subjects" multiple>
+                                            {{#each subjects}}
+                                                <option value="{{_id}}">{{name}} ({{code}})</option>
+                                            {{/each}}
+                                        </select>
+                                    {{/if}}
                                 </div>
                             </div>
                             {{/if}}
@@ -145,6 +169,21 @@
                                 <div class="form-group full-width">
                                     <label for="bio">Bio</label>
                                     <textarea id="bio" class="form-textarea" name="bio" placeholder="Tell us about yourself..." rows="4">{{ studentData.bio }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <div class="security-questions-section">
+                                        <h3>Security Questions</h3>
+                                        <p>Set up security questions for password recovery</p>
+                                        <a href="/setup-security-questions" class="setup-security-btn">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                            </svg>
+                                            Setup Security Questions
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
 

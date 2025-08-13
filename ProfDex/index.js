@@ -42,6 +42,22 @@ const {
     
     loginUser,
     registerUser,
+    hashPassword,
+    
+    // Password reset functions
+    generatePasswordResetToken,
+    validatePasswordResetToken,
+    verifySecurityQuestions,
+    resetPasswordWithToken,
+    resetPasswordDirectly,
+    setupSecurityQuestions,
+    getSecurityQuestions,
+    cleanupExpiredTokens,
+    validateSecurityAnswer,
+    
+    // Security questions configuration
+    SECURITY_QUESTIONS,
+    PASSWORD_RESET_CONFIG,
     
     User,
     Student,
@@ -51,7 +67,9 @@ const {
     Course,
     Subject,
     Post,
-    Comment
+    Comment,
+    SecurityQuestions,
+    PasswordResetAttempt
 } = require(__dirname + '/db' + '/controller.js');
 
 const mongoose = require('mongoose');
@@ -80,6 +98,22 @@ mongoose.connection.on('connected', async (err, res) => {
         console.log('Admin account initialization completed');
     } catch (error) {
         console.error('Error initializing admin account:', error);
+    }
+    
+    // Schedule cleanup of expired password reset tokens (every hour)
+    setInterval(async () => {
+        try {
+            await cleanupExpiredTokens();
+        } catch (error) {
+            console.error('Error cleaning up expired tokens:', error);
+        }
+    }, 60 * 60 * 1000); // Run every hour
+    
+    // Initial cleanup
+    try {
+        await cleanupExpiredTokens();
+    } catch (error) {
+        console.error('Error in initial token cleanup:', error);
     }
 });
 
@@ -120,6 +154,12 @@ app.engine('hbs', handlebars.engine({
         },
         'JSON.stringify': function(obj) {
             return JSON.stringify(obj);
+        },
+        in: function(item, array) {
+            if (!array || !Array.isArray(array)) return false;
+            return array.some(function(element) {
+                return element.toString() === item.toString();
+            });
         }
     }
 }));
@@ -295,8 +335,9 @@ async function initializeAdminAccount() {
         if (!existingAdmin) {
             console.log('📝 No administrator found. Creating default admin account...');
             
-            // Create admin user
-            const hashedPassword = await bcrypt.hash('admin123', saltRounds);
+            // Create admin user with secure password that meets all requirements
+            const securePassword = 'AdminSecure2024!@#';
+            const hashedPassword = await hashPassword(securePassword);
             const adminUser = new User({
                 firstName: 'Admin',
                 lastName: 'User',
@@ -312,7 +353,7 @@ async function initializeAdminAccount() {
             
             console.log('✅ Admin account created successfully!');
             console.log('   📧 Email: admin@profdex.com');
-            console.log('   🔑 Password: admin123');
+            console.log('   🔑 Password: AdminSecure2024!@#');
             console.log('   ⚠️  Remember to change the password after first login!');
         } else {
             console.log('ℹ️  Administrator account already exists');
@@ -455,7 +496,10 @@ app.route('/editprofile')
     }
     
     if (req.session.user.userType === 'professor') {
+        const professorData = await getProfessorData(myId);
         subjects = await getAllSubjects();
+        // Pass professor's selected subjects separately
+        var professorSubjects = professorData ? professorData.subjects : [];
     }
     
     var postData = await getUserPostData(myId);
@@ -467,6 +511,7 @@ app.route('/editprofile')
         errors,
         courses,
         subjects,
+        professorSubjects: professorSubjects || [],
         userType: req.session.user.userType,
         layout: false
     });
@@ -519,16 +564,17 @@ app.route('/editprofile')
       if (req.session.user.userType === 'professor') {
         const { subjects } = req.body;
         
-        if (subjects && Array.isArray(subjects)) {
-          await Professor.updateOne(
-            { userId: myId },
-            {
-              $set: {
-                subjects: subjects
-              }
+        // Update professor subjects - if no subjects selected, set to empty array
+        const subjectsToUpdate = subjects && Array.isArray(subjects) ? subjects : [];
+        
+        await Professor.updateOne(
+          { userId: myId },
+          {
+            $set: {
+              subjects: subjectsToUpdate
             }
-          );
-        }
+          }
+        );
       }
 
       res.redirect('/editprofile?success=true');
@@ -563,6 +609,9 @@ app.route('/login')
         errors.account_locked = true;
         errors.account_locked_reason = req.query.reason ? decodeURIComponent(req.query.reason) : 'Account is locked due to too many failed login attempts.';
     }
+    if (req.query.success === 'password_reset') {
+        errors.password_reset = true;
+    }
     
     const courses = await getAllCourses();
     const subjects = await getAllSubjects();
@@ -571,7 +620,8 @@ app.route('/login')
         layout: false, 
         errors,
         courses,
-        subjects
+        subjects,
+        success: req.query.success // Pass success parameter to template
     });
 })
 .post(async (req, res) => {
@@ -691,6 +741,229 @@ app.route('/login')
         console.error('Error during login/registration: ', error);
         console.error('Error stack:', error.stack);
         res.redirect('/login?error=registration_error');
+    }
+});
+
+// Password reset routes
+app.route('/forgot-password')
+.get(async (req, res) => {
+    const errors = {};
+    if (req.query.error === 'user_not_found') {
+        errors.user_not_found = true;
+    }
+    if (req.query.error === 'security_questions_not_setup') {
+        errors.security_questions_not_setup = true;
+    }
+    if (req.query.error === 'too_many_attempts') {
+        errors.too_many_attempts = true;
+    }
+    if (req.query.error === 'token_generation_failed') {
+        errors.token_generation_failed = true;
+    }
+    if (req.query.success === 'token_sent') {
+        errors.token_sent = true;
+    }
+    
+    res.render(__dirname + '/views' + '/forgot_password.hbs', { 
+        layout: false, 
+        errors
+    });
+})
+.post(async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            res.redirect('/forgot-password?error=user_not_found');
+            return;
+        }
+        
+        // Check if user exists and has security questions configured
+        const user = await User.findOne({ email: email.toLowerCase() });
+        console.log('Password reset attempt for email:', email.toLowerCase());
+        console.log('User found:', !!user);
+        
+        if (!user) {
+            console.log('User not found for email:', email.toLowerCase());
+            res.redirect('/forgot-password?error=user_not_found');
+            return;
+        }
+        
+        // Check if user has security questions configured
+        const securityQuestions = await SecurityQuestions.findOne({ userId: user._id });
+        console.log('Security questions found:', !!securityQuestions);
+        
+        if (!securityQuestions) {
+            console.log('Security questions not configured for user:', user._id);
+            res.redirect('/forgot-password?error=security_questions_not_setup');
+            return;
+        }
+        
+        // Check for too many reset attempts
+        const resetAttempts = await PasswordResetAttempt.findOne({ userId: user._id });
+        if (resetAttempts && resetAttempts.attempts >= 5 && 
+            (Date.now() - resetAttempts.lastAttempt) < 15 * 60 * 1000) { // 15 minutes
+            res.redirect('/forgot-password?error=too_many_attempts');
+            return;
+        }
+        
+        // Redirect directly to security questions page
+        res.redirect(`/reset-password?email=${encodeURIComponent(email)}`);
+        
+    } catch (error) {
+        console.error('Error in forgot password:', error);
+        // More specific error handling
+        if (error.name === 'ValidationError') {
+            res.redirect('/forgot-password?error=user_not_found');
+        } else {
+            res.redirect('/forgot-password?error=token_generation_failed');
+        }
+    }
+});
+
+app.route('/reset-password')
+.get(async (req, res) => {
+    const { email } = req.query;
+    const errors = {};
+    
+    if (!email) {
+        res.redirect('/forgot-password?error=token_generation_failed');
+        return;
+    }
+    
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+        res.redirect('/forgot-password?error=user_not_found');
+        return;
+    }
+    
+    // Get user's security questions
+    const questionsResult = await getSecurityQuestions(user._id);
+    if (!questionsResult.success) {
+        res.redirect('/forgot-password?error=security_questions_not_setup');
+        return;
+    }
+    
+    if (req.query.error === 'invalid_answers') {
+        errors.invalid_answers = true;
+    }
+    if (req.query.error === 'password_validation') {
+        errors.password_validation = true;
+        errors.password_validation_details = req.query.details ? decodeURIComponent(req.query.details) : '';
+    }
+    if (req.query.error === 'reset_failed') {
+        errors.reset_failed = true;
+    }
+    
+    res.render(__dirname + '/views' + '/reset_password.hbs', { 
+        layout: false, 
+        errors,
+        email,
+        questions: questionsResult.questions
+    });
+})
+.post(async (req, res) => {
+    try {
+        const { email, answer1, answer2, answer3, newPassword, confirmPassword } = req.body;
+        
+        if (!email || !answer1 || !answer2 || !answer3 || !newPassword || !confirmPassword) {
+            res.redirect(`/reset-password?email=${encodeURIComponent(email || '')}&error=reset_failed`);
+            return;
+        }
+        
+        // Find user by email
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            res.redirect('/forgot-password?error=user_not_found');
+            return;
+        }
+        
+        // Verify security questions
+        const answers = { answer1, answer2, answer3 };
+        const verificationResult = await verifySecurityQuestions(user._id, answers);
+        if (!verificationResult.success) {
+            res.redirect(`/reset-password?email=${encodeURIComponent(email)}&error=invalid_answers`);
+            return;
+        }
+        
+        // Check password confirmation
+        if (newPassword !== confirmPassword) {
+            res.redirect(`/reset-password?email=${encodeURIComponent(email)}&error=reset_failed`);
+            return;
+        }
+        
+        // Reset password directly
+        const resetResult = await resetPasswordDirectly(user._id, newPassword);
+        if (resetResult.success) {
+            res.redirect('/login?success=password_reset');
+        } else {
+            if (resetResult.error === 'password_validation') {
+                res.redirect(`/reset-password?email=${encodeURIComponent(email)}&error=password_validation&details=${encodeURIComponent(resetResult.details)}`);
+            } else {
+                res.redirect(`/reset-password?email=${encodeURIComponent(email)}&error=reset_failed`);
+            }
+        }
+    } catch (error) {
+        console.error('Error in reset password:', error);
+        res.redirect(`/reset-password?email=${encodeURIComponent(req.body.email || '')}&error=reset_failed`);
+    }
+});
+
+app.route('/setup-security-questions')
+.get(isLoggedIn, async (req, res) => {
+    const errors = {};
+    if (req.query.error === 'security_question_validation') {
+        errors.security_question_validation = true;
+        errors.security_question_validation_details = req.query.details ? decodeURIComponent(req.query.details) : '';
+    }
+    if (req.query.error === 'setup_failed') {
+        errors.setup_failed = true;
+    }
+    if (req.query.success === 'questions_setup') {
+        errors.questions_setup = true;
+    }
+    
+    res.render(__dirname + '/views' + '/setup_security_questions.hbs', { 
+        layout: false, 
+        errors,
+        questions: SECURITY_QUESTIONS
+    });
+})
+.post(isLoggedIn, async (req, res) => {
+    try {
+        const { question1, answer1, question2, answer2, question3, answer3 } = req.body;
+        
+        console.log('Setup security questions POST request received');
+        console.log('User ID:', req.session.user._id);
+        console.log('Form data:', { question1, answer1, question2, answer2, question3, answer3 });
+        
+        if (!question1 || !answer1 || !question2 || !answer2 || !question3 || !answer3) {
+            console.log('Missing required fields');
+            res.redirect('/setup-security-questions?error=setup_failed');
+            return;
+        }
+        
+        const questions = { question1, answer1, question2, answer2, question3, answer3 };
+        console.log('Calling setupSecurityQuestions with:', questions);
+        const result = await setupSecurityQuestions(req.session.user._id, questions);
+        
+        console.log('setupSecurityQuestions result:', result);
+        
+        if (result.success) {
+            console.log('Security questions setup successful');
+            res.redirect('/setup-security-questions?success=questions_setup');
+        } else {
+            console.log('Security questions setup failed:', result.error);
+            if (result.error === 'security_question_validation') {
+                res.redirect(`/setup-security-questions?error=security_question_validation&details=${encodeURIComponent(result.details)}`);
+            } else {
+                res.redirect('/setup-security-questions?error=setup_failed');
+            }
+        }
+    } catch (error) {
+        console.error('Error in setup security questions:', error);
+        res.redirect('/setup-security-questions?error=setup_failed');
     }
 });
 

@@ -54,6 +54,176 @@ const ACCOUNT_LOCKOUT_CONFIG = {
     ADMIN_NOTIFICATION_THRESHOLD: parseInt(process.env.ADMIN_NOTIFICATION_THRESHOLD) || 10 // Notify admin after this many failed attempts
 };
 
+// Password reset configuration - Secure password reset with random questions
+const PASSWORD_RESET_CONFIG = {
+    RESET_TOKEN_EXPIRY_HOURS: parseInt(process.env.RESET_TOKEN_EXPIRY_HOURS) || 24, // Token expiry time
+    MAX_RESET_ATTEMPTS: parseInt(process.env.MAX_RESET_ATTEMPTS) || 3, // Maximum reset attempts per day
+    RESET_ATTEMPTS_WINDOW_HOURS: parseInt(process.env.RESET_ATTEMPTS_WINDOW_HOURS) || 24, // Window for counting attempts
+    ENABLE_SECURITY_QUESTIONS: process.env.ENABLE_SECURITY_QUESTIONS !== 'false', // Default to true
+    MIN_ANSWER_LENGTH: parseInt(process.env.MIN_ANSWER_LENGTH) || 3, // Minimum answer length
+    MAX_ANSWER_LENGTH: parseInt(process.env.MAX_ANSWER_LENGTH) || 100, // Maximum answer length
+    REQUIRE_ANSWER_COMPLEXITY: process.env.REQUIRE_ANSWER_COMPLEXITY !== 'false', // Default to true
+    MIN_ANSWER_COMPLEXITY_SCORE: parseInt(process.env.MIN_ANSWER_COMPLEXITY_SCORE) || 1 // Reduced minimum complexity score for answers
+};
+
+// Security questions configuration - Questions that support sufficiently random answers
+const SECURITY_QUESTIONS = [
+    {
+        id: 'q1',
+        question: 'What was the name of your first pet?',
+        category: 'personal',
+        difficulty: 'medium',
+        commonAnswers: ['dog', 'cat', 'fish', 'bird', 'hamster', 'rabbit']
+    },
+    {
+        id: 'q2',
+        question: 'What was the street name of your childhood home?',
+        category: 'personal',
+        difficulty: 'high',
+        commonAnswers: ['main', 'oak', 'maple', 'pine', 'elm', 'cedar']
+    },
+    {
+        id: 'q3',
+        question: 'What was your favorite subject in high school?',
+        category: 'personal',
+        difficulty: 'medium',
+        commonAnswers: ['math', 'science', 'english', 'history', 'art', 'music']
+    },
+    {
+        id: 'q4',
+        question: 'What was the model of your first car?',
+        category: 'personal',
+        difficulty: 'high',
+        commonAnswers: ['toyota', 'honda', 'ford', 'chevrolet', 'nissan', 'bmw']
+    },
+    {
+        id: 'q5',
+        question: 'What was the name of your first employer?',
+        category: 'professional',
+        difficulty: 'high',
+        commonAnswers: ['mcdonalds', 'walmart', 'target', 'starbucks', 'subway']
+    },
+    {
+        id: 'q6',
+        question: 'What was the color of your first bicycle?',
+        category: 'personal',
+        difficulty: 'medium',
+        commonAnswers: ['red', 'blue', 'green', 'black', 'white', 'yellow']
+    },
+    {
+        id: 'q7',
+        question: 'What was the name of your childhood best friend?',
+        category: 'personal',
+        difficulty: 'high',
+        commonAnswers: ['john', 'mike', 'sarah', 'jessica', 'david', 'emma']
+    },
+    {
+        id: 'q8',
+        question: 'What was the first concert you attended?',
+        category: 'personal',
+        difficulty: 'high',
+        commonAnswers: ['concert', 'show', 'performance']
+    },
+    {
+        id: 'q9',
+        question: 'What was the name of your first teacher?',
+        category: 'personal',
+        difficulty: 'high',
+        commonAnswers: ['mrs', 'mr', 'ms', 'dr', 'professor']
+    },
+    {
+        id: 'q10',
+        question: 'What was the make and model of your first computer?',
+        category: 'technical',
+        difficulty: 'high',
+        commonAnswers: ['dell', 'hp', 'apple', 'lenovo', 'acer', 'asus']
+    }
+];
+
+// Security question answer validation function
+function validateSecurityAnswer(answer, questionId) {
+    const errors = [];
+    let complexityScore = 0;
+    
+    if (!answer || typeof answer !== 'string') {
+        errors.push('Answer must be a valid string');
+        return { isValid: false, errors, complexityScore: 0 };
+    }
+    
+    // Length validation
+    if (answer.length < PASSWORD_RESET_CONFIG.MIN_ANSWER_LENGTH) {
+        errors.push(`Answer must be at least ${PASSWORD_RESET_CONFIG.MIN_ANSWER_LENGTH} characters long`);
+    }
+    
+    if (answer.length > PASSWORD_RESET_CONFIG.MAX_ANSWER_LENGTH) {
+        errors.push(`Answer must be no more than ${PASSWORD_RESET_CONFIG.MAX_ANSWER_LENGTH} characters long`);
+    }
+    
+    // Find the question to check against common answers
+    const question = SECURITY_QUESTIONS.find(q => q.id === questionId);
+    if (!question) {
+        errors.push('Invalid security question');
+        return { isValid: false, errors, complexityScore: 0 };
+    }
+    
+    // Check against common answers (case-insensitive) - only exact matches
+    const normalizedAnswer = answer.toLowerCase().trim();
+    if (question.commonAnswers.some(common => normalizedAnswer === common.toLowerCase())) {
+        errors.push('Answer is too common. Please provide a more specific or unique answer.');
+    }
+    
+    // Complexity scoring if enabled
+    if (PASSWORD_RESET_CONFIG.REQUIRE_ANSWER_COMPLEXITY) {
+        // Check for mixed case
+        if (/[a-z]/.test(answer) && /[A-Z]/.test(answer)) {
+            complexityScore += 1;
+        }
+        
+        // Check for numbers
+        if (/\d/.test(answer)) {
+            complexityScore += 1;
+        }
+        
+        // Check for special characters
+        if (/[^a-zA-Z0-9\s]/.test(answer)) {
+            complexityScore += 1;
+        }
+        
+        // Check for length bonus (reduced threshold for security answers)
+        if (answer.length >= 6) {
+            complexityScore += 1;
+        }
+        
+        // Check for multiple words (more lenient for security answers)
+        const words = answer.toLowerCase().split(/\s+/);
+        const uniqueWords = new Set(words);
+        if (uniqueWords.size >= 2) {
+            complexityScore += 1;
+        }
+        
+        // Bonus for longer answers (more lenient scoring)
+        if (answer.length >= 10) {
+            complexityScore += 1;
+        }
+        
+        // Bonus for answers with spaces (indicates more specific answers)
+        if (answer.includes(' ')) {
+            complexityScore += 1;
+        }
+        
+        if (complexityScore < PASSWORD_RESET_CONFIG.MIN_ANSWER_COMPLEXITY_SCORE) {
+            errors.push(`Answer complexity is too low. Please provide a more complex answer (minimum score: ${PASSWORD_RESET_CONFIG.MIN_ANSWER_COMPLEXITY_SCORE})`);
+        }
+    }
+    
+    return {
+        isValid: errors.length === 0,
+        errors,
+        complexityScore,
+        answerLength: answer.length
+    };
+}
+
 // Enhanced password strength validation function with enterprise-grade complexity requirements
 function validatePasswordStrength(password) {
     const errors = [];
@@ -510,7 +680,349 @@ async function unlockAccount(userId) {
     }
 }
 
+// Password reset functions
+async function generatePasswordResetToken(email) {
+    try {
+        // Find user by email
+        const user = await User.findOne({ email: email.toLowerCase().trim() });
+        if (!user) {
+            return { success: false, error: 'User not found' };
+        }
+        
+        // Check if user has security questions set up
+        const securityQuestions = await SecurityQuestions.findOne({ userId: user._id });
+        if (!securityQuestions) {
+            return { success: false, error: 'Security questions not configured' };
+        }
+        
+        // Check reset attempts limit
+        const recentAttempts = await PasswordResetToken.countDocuments({
+            userId: user._id,
+            createdAt: { 
+                $gte: new Date(Date.now() - PASSWORD_RESET_CONFIG.RESET_ATTEMPTS_WINDOW_HOURS * 60 * 60 * 1000) 
+            }
+        });
+        
+        if (recentAttempts >= PASSWORD_RESET_CONFIG.MAX_RESET_ATTEMPTS) {
+            return { success: false, error: 'Too many reset attempts. Please try again later.' };
+        }
+        
+        // Generate secure token
+        const crypto = require('crypto');
+        const token = crypto.randomBytes(32).toString('hex');
+        
+        // Set expiry time
+        const expiresAt = new Date(Date.now() + PASSWORD_RESET_CONFIG.RESET_TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
+        
+        // Save token
+        await PasswordResetToken.create({
+            userId: user._id,
+            token: token,
+            expiresAt: expiresAt
+        });
+        
+        return { 
+            success: true, 
+            token: token,
+            userId: user._id,
+            email: user.email
+        };
+    } catch (error) {
+        console.error('Error generating password reset token:', error);
+        return { success: false, error: 'Failed to generate reset token' };
+    }
+}
+
+async function validatePasswordResetToken(token) {
+    try {
+        const resetToken = await PasswordResetToken.findOne({
+            token: token,
+            used: false,
+            expiresAt: { $gt: new Date() }
+        });
+        
+        if (!resetToken) {
+            return { success: false, error: 'Invalid or expired token' };
+        }
+        
+        return { success: true, userId: resetToken.userId };
+    } catch (error) {
+        console.error('Error validating password reset token:', error);
+        return { success: false, error: 'Failed to validate token' };
+    }
+}
+
+async function verifySecurityQuestions(userId, answers) {
+    try {
+        const securityQuestions = await SecurityQuestions.findOne({ userId: userId });
+        if (!securityQuestions) {
+            return { success: false, error: 'Security questions not found' };
+        }
+        
+        // Verify each answer using hash comparison
+        const questions = [securityQuestions.question1, securityQuestions.question2, securityQuestions.question3];
+        const providedAnswers = [answers.answer1, answers.answer2, answers.answer3];
+        
+        for (let i = 0; i < questions.length; i++) {
+            const hashedExpectedAnswer = questions[i].answer;
+            const providedAnswer = providedAnswers[i];
+            
+            // Use verifyPassword function to compare (since answers are hashed with the same method)
+            const isCorrect = await verifyPassword(providedAnswer, hashedExpectedAnswer);
+            
+            if (!isCorrect) {
+                return { success: false, error: 'One or more security answers are incorrect' };
+            }
+        }
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error verifying security questions:', error);
+        return { success: false, error: 'Failed to verify security questions' };
+    }
+}
+
+async function resetPasswordWithToken(token, newPassword) {
+    try {
+        // Validate token
+        const tokenValidation = await validatePasswordResetToken(token);
+        if (!tokenValidation.success) {
+            return tokenValidation;
+        }
+        
+        // Validate new password
+        const passwordValidation = validatePasswordStrength(newPassword);
+        if (!passwordValidation.isValid) {
+            return { 
+                success: false, 
+                error: 'password_validation', 
+                details: passwordValidation.errors 
+            };
+        }
+        
+        // Hash new password
+        const hashedPassword = await hashPassword(newPassword);
+        
+        // Update user password
+        await User.findByIdAndUpdate(tokenValidation.userId, {
+            password: hashedPassword,
+            passwordChangedAt: new Date()
+        });
+        
+        // Mark token as used
+        await PasswordResetToken.findOneAndUpdate(
+            { token: token },
+            { used: true }
+        );
+        
+        // Add to password history
+        await addPasswordToHistory(tokenValidation.userId, hashedPassword);
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        return { success: false, error: 'Failed to reset password' };
+    }
+}
+
+async function setupSecurityQuestions(userId, questions) {
+    try {
+        console.log('Setting up security questions for user:', userId);
+        console.log('Questions received:', questions);
+        
+        // Validate each answer
+        const questionsToValidate = [
+            { answer: questions.answer1, questionId: questions.question1 },
+            { answer: questions.answer2, questionId: questions.question2 },
+            { answer: questions.answer3, questionId: questions.question3 }
+        ];
+        
+        for (const q of questionsToValidate) {
+            console.log('Validating question:', q.questionId, 'with answer:', q.answer);
+            const validation = validateSecurityAnswer(q.answer, q.questionId);
+            if (!validation.isValid) {
+                console.log('Validation failed for question:', q.questionId, 'Errors:', validation.errors);
+                return { 
+                    success: false, 
+                    error: 'security_question_validation', 
+                    details: validation.errors 
+                };
+            }
+        }
+        
+        console.log('All answers validated successfully');
+        
+        // Hash answers before storing
+        const hashedAnswers = {
+            question1: {
+                questionId: questions.question1,
+                answer: await hashPassword(questions.answer1)
+            },
+            question2: {
+                questionId: questions.question2,
+                answer: await hashPassword(questions.answer2)
+            },
+            question3: {
+                questionId: questions.question3,
+                answer: await hashPassword(questions.answer3)
+            }
+        };
+        
+        console.log('Answers hashed successfully');
+        
+        // Save or update security questions
+        const result = await SecurityQuestions.findOneAndUpdate(
+            { userId: userId },
+            hashedAnswers,
+            { upsert: true, new: true }
+        );
+        
+        console.log('Security questions saved to database:', result ? 'Success' : 'Failed');
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error setting up security questions:', error);
+        return { success: false, error: 'Failed to setup security questions' };
+    }
+}
+
+async function getSecurityQuestions(userId) {
+    try {
+        const securityQuestions = await SecurityQuestions.findOne({ userId: userId });
+        if (!securityQuestions) {
+            return { success: false, error: 'Security questions not found' };
+        }
+        
+        // Return questions without answers for security
+        return {
+            success: true,
+            questions: [
+                {
+                    questionId: securityQuestions.question1.questionId,
+                    question: SECURITY_QUESTIONS.find(q => q.id === securityQuestions.question1.questionId)?.question
+                },
+                {
+                    questionId: securityQuestions.question2.questionId,
+                    question: SECURITY_QUESTIONS.find(q => q.id === securityQuestions.question2.questionId)?.question
+                },
+                {
+                    questionId: securityQuestions.question3.questionId,
+                    question: SECURITY_QUESTIONS.find(q => q.id === securityQuestions.question3.questionId)?.question
+                }
+            ]
+        };
+    } catch (error) {
+        console.error('Error getting security questions:', error);
+        return { success: false, error: 'Failed to get security questions' };
+    }
+}
+
+async function cleanupExpiredTokens() {
+    try {
+        const result = await PasswordResetToken.deleteMany({
+            expiresAt: { $lt: new Date() }
+        });
+        console.log(`Cleaned up ${result.deletedCount} expired password reset tokens`);
+    } catch (error) {
+        console.error('Error cleaning up expired tokens:', error);
+    }
+}
+
 var Schema = mongoose.Schema;
+
+// Password reset token schema
+var passwordResetTokenSchema = new Schema({
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Users',
+        required: true
+    },
+    token: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    expiresAt: {
+        type: Date,
+        required: true
+    },
+    used: {
+        type: Boolean,
+        default: false
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+// Security questions schema
+var securityQuestionsSchema = new Schema({
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Users',
+        required: true
+    },
+    question1: {
+        questionId: {
+            type: String,
+            required: true
+        },
+        answer: {
+            type: String,
+            required: true
+        }
+    },
+    question2: {
+        questionId: {
+            type: String,
+            required: true
+        },
+        answer: {
+            type: String,
+            required: true
+        }
+    },
+    question3: {
+        questionId: {
+            type: String,
+            required: true
+        },
+        answer: {
+            type: String,
+            required: true
+        }
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    }
+});
+
+// Password reset attempts schema
+var passwordResetAttemptSchema = new Schema({
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Users',
+        required: true
+    },
+    attempts: {
+        type: Number,
+        default: 0
+    },
+    lastAttempt: {
+        type: Date,
+        default: Date.now
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+});
 
 var userSchema = new Schema({
     firstName: {
@@ -558,6 +1070,9 @@ var userSchema = new Schema({
     }
 });
 var User = mongoose.model("Users", userSchema);
+var PasswordResetToken = mongoose.model("PasswordResetTokens", passwordResetTokenSchema);
+var SecurityQuestions = mongoose.model("SecurityQuestions", securityQuestionsSchema);
+var PasswordResetAttempt = mongoose.model("PasswordResetAttempts", passwordResetAttemptSchema);
 
 var studentSchema = new Schema({
     userId: {
@@ -1394,6 +1909,37 @@ async function changePassword(userId, currentPassword, newPassword) {
     }
 }
 
+async function resetPasswordDirectly(userId, newPassword) {
+    try {
+        // Validate new password
+        const passwordValidation = validatePasswordStrength(newPassword);
+        if (!passwordValidation.isValid) {
+            return { 
+                success: false, 
+                error: 'password_validation', 
+                details: passwordValidation.errors 
+            };
+        }
+        
+        // Hash new password
+        const hashedPassword = await hashPassword(newPassword);
+        
+        // Update user password
+        await User.findByIdAndUpdate(userId, {
+            password: hashedPassword,
+            passwordChangedAt: new Date()
+        });
+        
+        // Add to password history
+        await addPasswordToHistory(userId, hashedPassword);
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        return { success: false, error: 'Failed to reset password' };
+    }
+}
+
 module.exports = {  
     getUserData,
     getUserByEmail,
@@ -1450,6 +1996,26 @@ module.exports = {
     recordFailedLoginAttempt,
     resetAccountLockout,
     unlockAccount,
+    
+    // Password reset functions
+    generatePasswordResetToken,
+    validatePasswordResetToken,
+    verifySecurityQuestions,
+    resetPasswordWithToken,
+    resetPasswordDirectly,
+    setupSecurityQuestions,
+    getSecurityQuestions,
+    cleanupExpiredTokens,
+    validateSecurityAnswer,
+    
+    // Security questions and reset token models
+    PasswordResetToken,
+    SecurityQuestions,
+    PasswordResetAttempt,
+    
+    // Security questions configuration
+    SECURITY_QUESTIONS,
+    PASSWORD_RESET_CONFIG,
     
     User,
     Student,

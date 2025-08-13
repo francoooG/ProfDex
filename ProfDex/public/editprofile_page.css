@@ -541,3 +541,83 @@ body {
         min-width: 160px;
     }
 }
+
+/* No subjects message styling */
+.no-subjects-message {
+    background: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 15px;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-style: italic;
+}
+
+.no-subjects-message svg {
+    color: #adb5bd;
+    flex-shrink: 0;
+}
+
+.no-subjects-message span {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* Security Questions Section */
+.security-questions-section {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 25px;
+    margin-top: 20px;
+}
+
+.security-questions-section h3 {
+    color: #495057;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.security-questions-section p {
+    color: #6c757d;
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.setup-security-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.setup-security-btn:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 123, 255, 0.3);
+}
+
+.setup-security-btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
