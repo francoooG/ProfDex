@@ -300,6 +300,7 @@ const {
     validateProfileEdit,
     validateSearchQuery,
     validateComment,
+    validateSecurityAnswer,
     validateCourse,
     validateSubject,
     logValidationEvent
@@ -739,6 +740,16 @@ app.route('/login')
                 }
 
                 const userType = loggedInUser.userType;
+                
+                // Ensure session is saved before redirecting
+                try {
+                    await new Promise((resolve, reject) => {
+                        req.session.save((err) => (err ? reject(err) : resolve()));
+                    });
+                } catch (e) {
+                    console.error('Error saving session during login:', e);
+                }
+                
                 // Redirect to original destination if available, otherwise to role-specific page
                 const returnTo = req.session.returnTo;
                 if (returnTo && returnTo !== '/login') {
@@ -844,6 +855,15 @@ app.route('/login')
                     if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
                         // Store last use info in session for display after redirect
                         req.session.lastUseInfo = loggedInUser.lastUseInfo;
+                    }
+                    
+                    // Ensure session is saved before redirecting
+                    try {
+                        await new Promise((resolve, reject) => {
+                            req.session.save((err) => (err ? reject(err) : resolve()));
+                        });
+                    } catch (e) {
+                        console.error('Error saving session during post-registration login:', e);
                     }
                     
                     // Redirect to original destination if available, otherwise to role-specific page
@@ -1777,7 +1797,10 @@ app.get('/admin/logs/data', isAdministrator, async (req, res) => {
         const filters = {};
         if (req.query.level) filters.level = req.query.level;
         if (req.query.eventType) filters.eventType = req.query.eventType;
-        if (req.query.success !== undefined) filters.success = req.query.success === 'true';
+        // Only apply success filter when explicitly set to 'true' or 'false'
+        if (req.query.success === 'true' || req.query.success === 'false') {
+            filters.success = req.query.success === 'true';
+        }
         if (req.query.startDate) filters.startDate = req.query.startDate;
         if (req.query.endDate) filters.endDate = req.query.endDate;
         
@@ -1822,7 +1845,10 @@ app.get('/admin/logs/export', isAdministrator, async (req, res) => {
         const filters = {};
         if (req.query.level) filters.level = req.query.level;
         if (req.query.eventType) filters.eventType = req.query.eventType;
-        if (req.query.success !== undefined) filters.success = req.query.success === 'true';
+        // Only apply success filter when explicitly set to 'true' or 'false'
+        if (req.query.success === 'true' || req.query.success === 'false') {
+            filters.success = req.query.success === 'true';
+        }
         if (req.query.startDate) filters.startDate = req.query.startDate;
         if (req.query.endDate) filters.endDate = req.query.endDate;
         
@@ -2033,6 +2059,15 @@ app.route('/admin/login')
                 if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
                     // Store last use info in session for display after redirect
                     req.session.lastUseInfo = loggedInUser.lastUseInfo;
+                }
+                
+                // Ensure session is saved before redirecting
+                try {
+                    await new Promise((resolve, reject) => {
+                        req.session.save((err) => (err ? reject(err) : resolve()));
+                    });
+                } catch (e) {
+                    console.error('Error saving session during admin login:', e);
                 }
                 
                 // Redirect to original destination if available, otherwise to admin dashboard

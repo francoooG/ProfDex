@@ -258,7 +258,8 @@ async function getLogs(filters = {}, limit = 100, skip = 0) {
         if (filters.eventType) {
             query.eventType = filters.eventType;
         }
-        if (filters.success !== undefined) {
+        // Only apply success filter when it is explicitly a boolean
+        if (typeof filters.success === 'boolean') {
             query.success = filters.success;
         }
         if (filters.userId) {
@@ -279,7 +280,7 @@ async function getLogs(filters = {}, limit = 100, skip = 0) {
             .sort({ timestamp: -1 })
             .limit(limit)
             .skip(skip)
-            .populate('userId', 'firstName lastName email')
+            // Avoid populate to prevent MissingSchemaError when User model isn't registered here
             .lean();
             
         const total = await LogEntry.countDocuments(query);
