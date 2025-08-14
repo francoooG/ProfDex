@@ -252,77 +252,21 @@ app.use(async (req, res, next) => {
     next();
 });
 
-function isLoggedIn(req, res, next) {
-    // Fail securely - deny access by default
-    if (!req.session || !req.session.user) {
-        // Store the original URL to redirect back after login
-        if (req.session) {
-            req.session.returnTo = req.originalUrl;
-        }
-        return res.redirect('/login');
-    }
-    
-    // Additional validation to ensure session integrity
-    if (!req.session.user._id || !req.session.user.email || !req.session.user.userType) {
-        console.log('Invalid session data detected, destroying session');
-        req.session.destroy();
-        return res.redirect('/login');
-    }
-    
-        next();
-    } 
-
-function isAdministrator(req, res, next) {
-    // Fail securely - deny access by default
-    if (!req.session || !req.session.user) {
-        if (req.session) {
-            req.session.returnTo = req.originalUrl;
-        }
-        return res.redirect('/admin/login');
-    }
-    
-    // Validate session integrity
-    if (!req.session.user._id || !req.session.user.email || !req.session.user.userType) {
-        console.log('Invalid session data detected in administrator check, destroying session');
-        req.session.destroy();
-        return res.redirect('/admin/login');
-    }
-    
-    // Check for administrator role
-    if (req.session.user.userType !== 'administrator') {
-        // Store the original URL to redirect back after login
-        req.session.returnTo = req.originalUrl;
-        return res.redirect('/admin/login');
-    }
-    
-        next();
-    } 
-
-function isModerator(req, res, next) {
-    // Fail securely - deny access by default
-    if (!req.session || !req.session.user) {
-        if (req.session) {
-            req.session.returnTo = req.originalUrl;
-        }
-        return res.redirect('/login');
-    }
-    
-    // Validate session integrity
-    if (!req.session.user._id || !req.session.user.email || !req.session.user.userType) {
-        console.log('Invalid session data detected in moderator check, destroying session');
-        req.session.destroy();
-        return res.redirect('/login');
-    }
-    
-    // Check for moderator role (manager or administrator)
-    if (req.session.user.userType !== 'manager' && req.session.user.userType !== 'administrator') {
-        // Store the original URL to redirect back after login
-        req.session.returnTo = req.originalUrl;
-        return res.redirect('/login');
-    }
-    
-    next();
-}
+// Import centralized authorization system
+const {
+    isLoggedIn,
+    isStudent,
+    isProfessor,
+    isModerator,
+    isManager,
+    isAdministrator,
+    hasMinimumRole,
+    isResourceOwner,
+    allowUserTypes,
+    canPerformAction,
+    AUTH_CONFIG,
+    hasAnyRole
+} = require('./auth');
 
 async function initializeAdminAccount() {
     try {
@@ -680,13 +624,13 @@ app.route('/login')
                 } else {
                     // Redirect to role-specific page with last use parameter
                     let redirectUrl = '';
-                if (userType === 'student') {
+                if (userType === AUTH_CONFIG.USER_TYPES.STUDENT) {
                         redirectUrl = '/editprofile';
-                } else if (userType === 'professor') {
+                } else if (userType === AUTH_CONFIG.USER_TYPES.PROFESSOR) {
                         redirectUrl = '/';
-                } else if (userType === 'manager') {
+                } else if (userType === AUTH_CONFIG.USER_TYPES.MANAGER) {
                         redirectUrl = '/moderator';
-                } else if (userType === 'administrator') {
+                } else if (userType === AUTH_CONFIG.USER_TYPES.ADMINISTRATOR) {
                         redirectUrl = '/admin';
                 } else {
                         redirectUrl = '/login?error=authentication_failed';
@@ -714,13 +658,13 @@ app.route('/login')
             
             let additionalData = {};
             
-            if (userType === 'student') {
+            if (userType === AUTH_CONFIG.USER_TYPES.STUDENT) {
                 if (!studentID || !course) {
                     res.redirect('/login?error=registration_error');
                     return;
                 }
                 additionalData = { studentID, courseId: course };
-            } else if (userType === 'professor') {
+            } else if (userType === AUTH_CONFIG.USER_TYPES.PROFESSOR) {
                 if (!teacherID) {
                     res.redirect('/login?error=registration_error');
                     return;
@@ -752,13 +696,13 @@ app.route('/login')
                     } else {
                         // Redirect to role-specific page with last use parameter
                         let redirectUrl = '';
-                    if (userType === 'student') {
+                    if (userType === AUTH_CONFIG.USER_TYPES.STUDENT) {
                             redirectUrl = '/editprofile';
-                    } else if (userType === 'professor') {
+                    } else if (userType === AUTH_CONFIG.USER_TYPES.PROFESSOR) {
                             redirectUrl = '/';
-                    } else if (userType === 'manager') {
+                    } else if (userType === AUTH_CONFIG.USER_TYPES.MANAGER) {
                             redirectUrl = '/moderator';
-                    } else if (userType === 'administrator') {
+                    } else if (userType === AUTH_CONFIG.USER_TYPES.ADMINISTRATOR) {
                             redirectUrl = '/admin';
                         }
                         
@@ -1190,10 +1134,9 @@ app.post('/delete-review-and-comments', isLoggedIn, async (req, res) => {
         
         // Check if user owns the review or is a manager/administrator
         const isOwner = postData.op && postData.op.toString() === req.session.user._id;
-        const isManager = req.session.user.userType === 'manager';
-        const isAdmin = req.session.user.userType === 'administrator';
+        const canModerate = canPerformAction(req.session.user, 'moderate_reviews');
         
-        if (!isOwner && !isManager && !isAdmin) {
+        if (!isOwner && !canModerate) {
             return res.status(403).send('Forbidden - You can only delete your own reviews');
         }
         
@@ -1202,7 +1145,7 @@ app.post('/delete-review-and-comments', isLoggedIn, async (req, res) => {
         await deletePost(reviewId);
         
         // Redirect based on user type
-        if (req.session.user.userType === 'student' || req.session.user.userType === 'professor') {
+        if (hasAnyRole(['student', 'professor'], req.session.user)) {
             res.redirect('/editprofile');
         } else {
             res.redirect('/');
@@ -1515,9 +1458,9 @@ app.route('/moderator')
         console.log('Current user type:', userType);
         
         // Calculate user counts for statistics
-        const studentCount = users.filter(user => user.userType === 'student').length;
-        const professorCount = users.filter(user => user.userType === 'professor').length;
-        const unassignedCount = users.filter(user => user.userType === 'manager' || user.userType === 'administrator').length;
+        const studentCount = users.filter(user => user.userType === AUTH_CONFIG.USER_TYPES.STUDENT).length;
+        const professorCount = users.filter(user => user.userType === AUTH_CONFIG.USER_TYPES.PROFESSOR).length;
+        const unassignedCount = users.filter(user => hasAnyRole([AUTH_CONFIG.USER_TYPES.MANAGER, AUTH_CONFIG.USER_TYPES.ADMINISTRATOR], user)).length;
         
         console.log('Moderator Dashboard Statistics:');
         console.log('Total users:', users.length);
@@ -1586,9 +1529,9 @@ app.route('/admin')
         const userType = req.session.user ? req.session.user.userType : null;
         
         // Calculate user counts for statistics
-        const studentCount = users.filter(user => user.userType === 'student').length;
-        const professorCount = users.filter(user => user.userType === 'professor').length;
-        const moderatorCount = users.filter(user => user.userType === 'manager').length;
+        const studentCount = users.filter(user => user.userType === AUTH_CONFIG.USER_TYPES.STUDENT).length;
+        const professorCount = users.filter(user => user.userType === AUTH_CONFIG.USER_TYPES.PROFESSOR).length;
+        const moderatorCount = users.filter(user => user.userType === AUTH_CONFIG.USER_TYPES.MANAGER).length;
         
         res.render(__dirname + '/views' + '/admin_dashboard.hbs', {
             users,
@@ -1729,7 +1672,7 @@ app.route('/admin/login')
                 return;
             }
             
-            if (loggedInUser.userType === 'administrator') {
+            if (canPerformAction(loggedInUser, 'view_admin_panel')) {
                 console.log('Admin login successful for:', email);
                 // Check if we have last use information to display
                 if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
