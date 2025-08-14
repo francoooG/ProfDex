@@ -53,7 +53,6 @@ const {
     setupSecurityQuestions,
     getSecurityQuestions,
     cleanupExpiredTokens,
-    validateSecurityAnswer,
     changePassword,
     reAuthenticateUser,
     
@@ -283,8 +282,7 @@ const {
     canPerformAction,
     canPerformActionMiddleware,
     AUTH_CONFIG,
-    hasAnyRole,
-    logSecurityEvent
+    hasAnyRole
 } = require('./auth');
 
 // Import business rules enforcement system
@@ -302,7 +300,6 @@ const {
     validateProfileEdit,
     validateSearchQuery,
     validateComment,
-    validateSecurityAnswer,
     validateCourse,
     validateSubject,
     logValidationEvent
