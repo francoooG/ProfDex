@@ -237,7 +237,18 @@
             const password = document.querySelector('input[name="registerPassword"]').value;
             const confirmPassword = document.querySelector('input[name="confirmPassword"]').value;
 
-            if (!firstName || !lastName || !email || !password || !confirmPassword || !userType) {
+            // Strict input rejection for first name and last name
+            const nameRegex = /^[A-Za-z\-\' ]+$/;
+            if (!firstName || !nameRegex.test(firstName)) {
+                isValid = false;
+                errorMessage = 'Invalid first name';
+            } else if (!lastName || !nameRegex.test(lastName)) {
+                isValid = false;
+                errorMessage = 'Invalid last name';
+            } else if (!email || !/^([a-zA-Z0-9_\-.+]+)@([a-zA-Z0-9_\-.]+)\.([a-zA-Z]{2,})$/.test(email)) {
+                isValid = false;
+                errorMessage = 'Invalid email address';
+            } else if (!password || !confirmPassword || !userType) {
                 isValid = false;
                 errorMessage = 'Please fill all required fields';
             } else if (password !== confirmPassword) {
@@ -248,7 +259,7 @@
                 const passwordChecks = validatePassword(password);
                 const coreRequirements = ['length', 'uppercase', 'lowercase', 'number', 'special', 'complexity', 'sequences', 'repeats', 'patterns', 'common'];
                 const allPasswordRequirementsMet = coreRequirements.every(req => passwordChecks[req] === true);
-                
+
                 if (!allPasswordRequirementsMet) {
                     isValid = false;
                     errorMessage = 'Password does not meet all requirements';
@@ -257,14 +268,17 @@
                     if (userType === 'student') {
                         const studentID = document.querySelector('input[name="studentID"]').value.trim();
                         const course = document.querySelector('select[name="course"]').value;
-                        
-                        if (!studentID || !course) {
+                        const studentIdRegex = /^\d{1,8}$/;
+                        if (!studentID || !studentIdRegex.test(studentID)) {
                             isValid = false;
-                            errorMessage = 'Please fill student ID and select a course';
+                            errorMessage = 'Student ID must be at most 8 digits and only numbers';
+                        } else if (!course) {
+                            isValid = false;
+                            errorMessage = 'Please select a course';
                         }
                     } else if (userType === 'professor') {
                         const teacherID = document.querySelector('input[name="teacherID"]').value.trim();
-                        
+
                         if (!teacherID) {
                             isValid = false;
                             errorMessage = 'Please fill teacher ID';
@@ -280,7 +294,7 @@
                 registerButton.classList.add('disabled');
                 registerButton.title = errorMessage;
             }
-            
+
             console.log('Form validity check:', { isValid, userType, errorMessage });
 
             return isValid;
@@ -350,38 +364,61 @@
 
         document.getElementById('registerForm').addEventListener('submit', function(e) {
             e.preventDefault(); // Prevent default form submission
-            
+
+            // Strict input rejection for first name and last name
+            const firstName = document.querySelector('input[name="registerFirstName"]').value.trim();
+            const lastName = document.querySelector('input[name="registerLastName"]').value.trim();
+            const email = document.querySelector('input[name="registerEmail"]').value.trim();
+            const nameRegex = /^[A-Za-z\-\' ]+$/;
+            if (!firstName || !nameRegex.test(firstName)) {
+                alert('Invalid first name.');
+                return;
+            }
+            if (!lastName || !nameRegex.test(lastName)) {
+                alert('Invalid last name.');
+                return;
+            }
+            if (!email || !/^([a-zA-Z0-9_\-.+]+)@([a-zA-Z0-9_\-.]+)\.([a-zA-Z]{2,})$/.test(email)) {
+                alert('Invalid email address.');
+                return;
+            }
+
             // Validate password requirements
             const password = document.querySelector('input[name="registerPassword"]').value;
             const passwordChecks = validatePassword(password);
             const coreRequirements = ['length', 'uppercase', 'lowercase', 'number', 'special', 'complexity', 'sequences', 'repeats', 'patterns', 'common'];
             const allPasswordRequirementsMet = coreRequirements.every(req => passwordChecks[req] === true);
-            
+
             if (!allPasswordRequirementsMet) {
                 alert('Password does not meet all requirements. Please check the password requirements above.');
                 return;
             }
-            
+
             // Check if passwords match
             const confirmPassword = document.querySelector('input[name="confirmPassword"]').value;
             if (password !== confirmPassword) {
                 alert('Passwords do not match.');
                 return;
             }
-            
+
             // Check if all required fields are filled
             const userType = document.getElementById('userType').value;
             if (!userType) {
                 alert('Please select a user type.');
                 return;
             }
-            
+
             // Additional validation based on user type
             if (userType === 'student') {
                 const studentID = document.querySelector('input[name="studentID"]').value.trim();
                 const course = document.querySelector('select[name="course"]').value;
-                if (!studentID || !course) {
-                    alert('Please fill student ID and select a course.');
+                const studentIdRegex = /^\d{1,8}$/;
+                if (!studentID || !studentIdRegex.test(studentID)) {
+                    alert('Student ID must be at most 8 digits and only numbers.');
+                    return;
+                }
+                if (!course) {
+                    alert('Please select a course.');
                     return;
                 }
             } else if (userType === 'professor') {
@@ -391,21 +428,21 @@
                     return;
                 }
             }
-            
+
             // If all validation passes, submit the form using fetch
             console.log('Form validation passed, submitting...');
-            
+
             // Collect form data
             const formData = new FormData(this);
-            
+
             // Convert FormData to URLSearchParams for POST request
             const urlParams = new URLSearchParams();
             for (let [key, value] of formData.entries()) {
                 urlParams.append(key, value);
             }
-            
+
             console.log('Submitting form data:', Object.fromEntries(urlParams));
-            
+
             // Submit the form data
             fetch('/login', {
                 method: 'POST',
@@ -417,7 +454,7 @@
             .then(response => {
                 console.log('Response status:', response.status);
                 console.log('Response redirected:', response.redirected);
-                
+
                 if (response.redirected) {
                     // If the server redirects, follow the redirect
                     window.location.href = response.url;

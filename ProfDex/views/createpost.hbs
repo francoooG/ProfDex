@@ -53,7 +53,7 @@
         </div>
 
         <div class="main-content">
-            <form action="/createpost" method="post" class="create-form">
+            <form action="/createpost" method="post" class="create-form" id="createPostForm">
                 {{#if errors.professor_error}}
                     <div class="alert alert-error">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -247,11 +247,44 @@
     </div>
 
     <script>
-        // Auto-fill course when professor is selected
+        document.getElementById('createPostForm').addEventListener('submit', function(e) {
+            var professorSelect = document.getElementById('professorSelect');
+            if (!professorSelect.value) {
+                alert('Please select a professor.');
+                e.preventDefault();
+                return false;
+            }
+
+            var courseInput = document.getElementById('courseInput');
+            if (!courseInput.value) {
+                alert('Please select a course.');
+                e.preventDefault();
+                return false;
+            }
+
+            var ratingFields = ['proficiency', 'generosity', 'engagement', 'workload', 'difficulty'];
+            for (var i = 0; i < ratingFields.length; i++) {
+                var slider = document.getElementById(ratingFields[i]);
+                var val = parseInt(slider.value, 10);
+                if (isNaN(val) || val < 1 || val > 5) {
+                    alert('All ratings must be between 1 and 5.');
+                    e.preventDefault();
+                    return false;
+                }
+            }
+
+            var reviewText = document.getElementById('reviewText').value.trim();
+            var reviewRegex = /^[^<>]{10,2000}$/;
+            if (!reviewRegex.test(reviewText)) {
+                alert('Review must be 10-2000 characters and not contain < or >.');
+                e.preventDefault();
+                return false;
+            }
+        });
+
         document.getElementById('professorSelect').addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
             const courseInput = document.getElementById('courseInput');
-            
             if (selectedOption.value) {
                 const course = selectedOption.getAttribute('data-course');
                 courseInput.value = course;
@@ -260,7 +293,6 @@
             }
         });
 
-        // Update rating values in real-time
         const sliders = document.querySelectorAll('.rating-slider');
         sliders.forEach(slider => {
             slider.addEventListener('input', function() {
@@ -272,12 +304,10 @@
             });
         });
 
-        // Character count for review text
-        const reviewText = document.getElementById('reviewText');
-        reviewText.addEventListener('input', function() {
+        const reviewTextArea = document.getElementById('reviewText');
+        reviewTextArea.addEventListener('input', function() {
             const charCount = this.value.length;
             const minChars = 10;
-            
             if (charCount < minChars) {
                 this.classList.add('invalid');
             } else {

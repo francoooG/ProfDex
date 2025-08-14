@@ -65,7 +65,7 @@
                     </div>
 
                     <div class="profile-form-section">
-                        <form action="/editprofile" method="post" class="profile-form">
+                        <form action="/editprofile" method="post" class="profile-form" id="editProfileForm">
                             {{#if errors.validation_error}}
                                 <div class="alert alert-error">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -219,6 +219,60 @@
                     </div>
                 </div>
             </div>
+            <script>
+            document.getElementById('editProfileForm').addEventListener('submit', function(e) {
+                var firstName = document.getElementById('firstName').value.trim();
+                var lastName = document.getElementById('lastName').value.trim();
+                var nameRegex = /^[A-Za-z\-\' ]+$/;
+                if (!firstName || !nameRegex.test(firstName)) {
+                    alert('Invalid first name. Only letters, hyphens, apostrophes, and spaces allowed.');
+                    e.preventDefault();
+                    return false;
+                }
+                if (!lastName || !nameRegex.test(lastName)) {
+                    alert('Invalid last name. Only letters, hyphens, apostrophes, and spaces allowed.');
+                    e.preventDefault();
+                    return false;
+                }
+
+                var email = document.getElementById('email').value.trim();
+                var emailRegex = /^([a-zA-Z0-9_\-.+]+)@([a-zA-Z0-9_\-.]+)\.([a-zA-Z]{2,})$/;
+                if (!email || !emailRegex.test(email)) {
+                    alert('Invalid email address.');
+                    e.preventDefault();
+                    return false;
+                }
+
+                var studentIdInput = document.getElementById('studentID');
+                if (studentIdInput) {
+                    var studentID = studentIdInput.value.trim();
+                    var studentIdRegex = /^\d{1,8}$/;
+                    if (!studentID || !studentIdRegex.test(studentID)) {
+                        alert('Invalid student ID. Only 1-8 digits allowed.');
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+
+                var courseInput = document.getElementById('course');
+                if (courseInput && !courseInput.value) {
+                    alert('Please select a course.');
+                    e.preventDefault();
+                    return false;
+                }
+
+                var bioInput = document.getElementById('bio');
+                if (bioInput) {
+                    var bio = bioInput.value.trim();
+                    var bioRegex = /^[A-Za-z\s]{0,300}$/;
+                    if (bio.length > 300 || !bioRegex.test(bio)) {
+                        alert('Bio must be at most 300 characters and only contain letters and spaces.');
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            });
+            </script>
 
             {{#unless (eq userType 'professor')}}
             <div class="posts-section">

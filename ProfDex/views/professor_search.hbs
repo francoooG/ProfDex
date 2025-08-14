@@ -27,10 +27,21 @@
             {{else}}
                 <a class="login-button" href="/login">Login</a>
             {{/if}}
-            <form action="/viewprof" method="post">
+            <form action="/viewprof" method="post" id="searchForm">
                 <input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
                 <button type="submit" id="searchbutton"></button>
             </form>
+            <script>
+            document.getElementById('searchForm').addEventListener('submit', function(e) {
+                var searchInput = document.getElementById('search').value.trim();
+                var searchRegex = /^[A-Za-z\-\' ]{1,100}$/;
+                if (!searchInput || !searchRegex.test(searchInput)) {
+                    alert('Please enter a valid professor name (letters, spaces, hyphens, apostrophes, max 100 characters).');
+                    e.preventDefault();
+                    return false;
+                }
+            });
+            </script>
         </span>
     </div>
 

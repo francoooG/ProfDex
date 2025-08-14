@@ -43,7 +43,7 @@
         </div>
 
         <div class="main-content">
-            <form action="/editreview" method="post" class="edit-form">
+            <form action="/editreview" method="post" class="edit-form" id="editReviewForm">
                 <div class="form-section">
                     <div class="professor-info">
                         <div class="professor-card">
@@ -178,7 +178,27 @@
     </div>
 
     <script>
-        // Update rating values when sliders change
+        document.getElementById('editReviewForm').addEventListener('submit', function(e) {
+            var ratingFields = ['proficiency', 'generosity', 'engagement', 'workload', 'difficulty'];
+            for (var i = 0; i < ratingFields.length; i++) {
+                var slider = document.getElementById(ratingFields[i]);
+                var val = parseInt(slider.value, 10);
+                if (isNaN(val) || val < 1 || val > 5) {
+                    alert('All ratings must be between 1 and 5.');
+                    e.preventDefault();
+                    return false;
+                }
+            }
+
+            var reviewText = document.querySelector('.review-textarea').value.trim();
+            var reviewRegex = /^[^<>]{10,2000}$/;
+            if (!reviewRegex.test(reviewText)) {
+                alert('Review must be 10-2000 characters and not contain < or >.');
+                e.preventDefault();
+                return false;
+            }
+        });
+
         document.querySelectorAll('.rating-slider').forEach(slider => {
             slider.addEventListener('input', function() {
                 const ratingItem = this.closest('.rating-item');
@@ -187,7 +207,6 @@
             });
         });
 
-        // Update character count when typing
         document.querySelector('.review-textarea').addEventListener('input', function() {
             const countText = document.querySelector('.count-text');
             countText.textContent = this.value.length + ' characters';

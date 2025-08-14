@@ -190,7 +190,7 @@
                 </ul>
             </div>
             
-            <form class="setup-questions-form" action="/setup-security-questions" method="POST">
+            <form class="setup-questions-form" action="/setup-security-questions" method="POST" id="securityQuestionsForm">
                 <div class="question-selection-section">
                     <h3>Security Questions</h3>
                     
@@ -238,15 +238,34 @@
     </div>
     
     <script>
+        document.getElementById('securityQuestionsForm').addEventListener('submit', function(e) {
+            for (var i = 1; i <= 3; i++) {
+                var questionSelect = document.getElementById('question' + i);
+                var answerInput = document.getElementById('answer' + i);
+                if (!questionSelect || !answerInput) continue;
+                var qVal = questionSelect.value.trim();
+                var aVal = answerInput.value.trim();
+                if (!qVal) {
+                    alert('Please select a security question for Question ' + i + '.');
+                    e.preventDefault();
+                    return false;
+                }
+                var answerRegex = /^[A-Za-z0-9\-\' ]{1,100}$/;
+                if (!aVal || !answerRegex.test(aVal)) {
+                    alert('Invalid answer for Question ' + i + '. Only letters, numbers, spaces, hyphens, apostrophes, max 100 characters.');
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+
         // Prevent duplicate question selection
         document.addEventListener('DOMContentLoaded', function() {
             const selects = document.querySelectorAll('select[name^="question"]');
-            
             selects.forEach(select => {
                 select.addEventListener('change', function() {
                     const selectedValue = this.value;
                     const currentSelect = this;
-                    
                     selects.forEach(otherSelect => {
                         if (otherSelect !== currentSelect && otherSelect.value === selectedValue) {
                             otherSelect.value = '';

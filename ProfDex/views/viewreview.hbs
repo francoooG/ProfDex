@@ -163,7 +163,7 @@
 
                 <div class="add-comment-section">
                     <h3>Add a Comment</h3>
-                    <form action="/reply" method="post" class="comment-form">
+                    <form action="/reply" method="post" class="comment-form" id="commentForm">
                         <div class="form-group">
                             <textarea 
                                 id="comment" 
@@ -178,6 +178,17 @@
                         <input type="hidden" name="toname" value="{{postData.opname}}">
                         <button type="submit" class="submit-btn">Post Comment</button>
                     </form>
+                    <script>
+                    document.getElementById('commentForm').addEventListener('submit', function(e) {
+                        var comment = document.getElementById('comment').value;
+                        var commentRegex = /^[\p{L}\p{N}\p{P}\p{Zs}\n\r]{1,2000}$/u;
+                        if (!commentRegex.test(comment)) {
+                            alert('Comment rejected: must be 1-2000 valid characters (letters, numbers, punctuation, spaces, newlines).');
+                            e.preventDefault();
+                            return false;
+                        }
+                    });
+                    </script>
                 </div>
             </div>
         </div>
