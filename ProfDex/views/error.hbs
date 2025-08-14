@@ -3,111 +3,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error - ProfDex</title>
+    <title>{{errorTitle}} - ProfDex</title>
     <link rel="stylesheet" href="navbar.css">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-            line-height: 1.6;
             min-height: 100vh;
-            margin: 0;
-            padding: 0;
             display: flex;
-            flex-direction: column;
             align-items: center;
+            justify-content: center;
+            color: #333;
         }
-        
+
         .error-container {
-            margin-top: 120px;
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 40px;
+            padding: 60px 40px;
             text-align: center;
             max-width: 500px;
             width: 90%;
+            position: relative;
+            overflow: hidden;
         }
-        
-        .error-icon {
-            font-size: 4rem;
+
+        .error-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+        }
+
+        .error-code {
+            font-size: 120px;
+            font-weight: 700;
+            color: #667eea;
+            line-height: 1;
             margin-bottom: 20px;
-            color: #dc3545;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         .error-title {
-            font-size: 2rem;
+            font-size: 28px;
             font-weight: 600;
             color: #333;
             margin-bottom: 15px;
         }
-        
+
         .error-message {
-            font-size: 1.1rem;
+            font-size: 16px;
             color: #666;
-            margin-bottom: 30px;
+            line-height: 1.6;
+            margin-bottom: 40px;
         }
-        
+
         .error-actions {
             display: flex;
             gap: 15px;
             justify-content: center;
             flex-wrap: wrap;
         }
-        
+
         .btn {
             padding: 12px 24px;
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
             border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
             cursor: pointer;
-            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
-        
+
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
-        
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
         .btn-secondary {
-            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            background: #f8f9fa;
+            color: #666;
+            border: 2px solid #e9ecef;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .error-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 30px;
+            background: linear-gradient(135deg, #ff6b6b, #feca57);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
             color: white;
         }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+
+        .error-details {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .error-details h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .error-details p {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 480px) {
+            .error-container {
+                padding: 40px 20px;
+            }
+            
+            .error-code {
+                font-size: 80px;
+            }
+            
+            .error-title {
+                font-size: 24px;
+            }
+            
+            .error-actions {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
     <div class="error-container">
-        <div class="error-icon">⚠️</div>
-        <h1 class="error-title">{{error}}</h1>
-        <p class="error-message">{{message}}</p>
-        <div class="error-actions">
-            <button onclick="window.history.back()" class="btn btn-secondary">Go Back</button>
-            <a href="/" class="btn btn-primary">Go Home</a>
+        <div class="error-icon">
+            {{#if (eq errorCode 404)}}
+                🔍
+            {{else if (eq errorCode 403)}}
+                🚫
+            {{else if (eq errorCode 401)}}
+                🔐
+            {{else if (eq errorCode 500)}}
+                ⚠️
+            {{else}}
+                ❌
+            {{/if}}
         </div>
-    </div>
-    
-    <div id="navbar">
-        <a class="mainpage" href="/">Profdex</a>
-        <span class="navbar-buttons">
-            <a class="menu" href="/editprofile">About Me</a>
-            <a class="menu" href="/help">Help</a>
-        </span>
-        <span class="search-buttons">
-            <a class="login-button" href="/login">Login</a>
-            <a class="admin-link" href="/admin/login">Admin</a>
-            <form action="/viewprof" method="post">
-                <input type="text" class="search" id="search" name="search" placeholder="Professor Full Name">
-                <button type="submit" id="searchbutton"></button>
-            </form>
-        </span>
+        
+        <div class="error-code">{{errorCode}}</div>
+        <h1 class="error-title">{{errorTitle}}</h1>
+        <p class="error-message">{{errorMessage}}</p>
+        
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9,22 9,12 15,12 15,22"/>
+                </svg>
+                Go Home
+            </a>
+            <a href="/login" class="btn btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                    <polyline points="10,17 15,12 10,7"/>
+                    <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                Login
+            </a>
+            <button onclick="history.back()" class="btn btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15,18 9,12 15,6"/>
+                </svg>
+                Go Back
+            </button>
+        </div>
+        
+        {{#if (eq errorCode 404)}}
+        <div class="error-details">
+            <h4>What happened?</h4>
+            <p>The page you're looking for doesn't exist or has been moved. Please check the URL or navigate using the links above.</p>
+        </div>
+        {{else if (eq errorCode 403)}}
+        <div class="error-details">
+            <h4>Access Denied</h4>
+            <p>You don't have permission to access this resource. Please contact an administrator if you believe this is an error.</p>
+        </div>
+        {{else if (eq errorCode 401)}}
+        <div class="error-details">
+            <h4>Authentication Required</h4>
+            <p>Please log in to access this resource. Your session may have expired.</p>
+        </div>
+        {{else if (eq errorCode 500)}}
+        <div class="error-details">
+            <h4>Server Error</h4>
+            <p>Something went wrong on our end. Please try again later or contact support if the problem persists.</p>
+        </div>
+        {{/if}}
     </div>
 </body>
 </html>

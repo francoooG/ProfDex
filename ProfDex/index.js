@@ -77,6 +77,20 @@ const {
     PasswordResetAttempt
 } = require(__dirname + '/db' + '/controller.js');
 
+// 2.4.1, 2.4.2, 2.4.3, 2.4.4, 2.4.5, 2.4.6, 2.4.7: Error handling and logging system
+const {
+    ERROR_CONFIG,
+    logSecurityEvent,
+    logAuthenticationAttempt,
+    logAccessControlFailure,
+    logValidationFailure,
+    getLogs,
+    getLogStatistics,
+    cleanupOldLogs,
+    errorHandlingMiddleware,
+    requestLoggingMiddleware
+} = require('./error_handling');
+
 const mongoose = require('mongoose');
 const session = require('express-session');
 const { MongoClient } = require('mongodb');
@@ -172,6 +186,9 @@ app.set('view engine', 'hbs');
 app.set('views', __dirname + '/views');
 
 app.set('view cache', false);
+
+// 2.4.1, 2.4.2: Add error handling and request logging middleware
+app.use(requestLoggingMiddleware());
 
 var current;
 
@@ -691,9 +708,32 @@ app.route('/login')
             if (loggedInUser) {
                 // Check for account locked error
                 if (loggedInUser.error === 'account_locked') {
+                    // 2.4.6: Log failed authentication attempt (account locked)
+                    await logAuthenticationAttempt(false, {
+                        ipAddress: req.ip,
+                        userAgent: req.get('User-Agent'),
+                        email: email,
+                        sessionId: req.sessionID,
+                        requestPath: req.path,
+                        requestMethod: req.method,
+                        error: 'Account locked',
+                        reason: loggedInUser.reason
+                    });
+                    
                     res.redirect(`/login?error=account_locked&reason=${encodeURIComponent(loggedInUser.reason)}`);
                     return;
                 }
+
+                // 2.4.6: Log successful authentication attempt
+                await logAuthenticationAttempt(true, {
+                    ipAddress: req.ip,
+                    userAgent: req.get('User-Agent'),
+                    userId: loggedInUser._id,
+                    userType: loggedInUser.userType,
+                    sessionId: req.sessionID,
+                    requestPath: req.path,
+                    requestMethod: req.method
+                });
 
                 // Check if we have last use information to display
                 if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
@@ -735,6 +775,17 @@ app.route('/login')
                 }
             } 
             else {
+                // 2.4.6: Log failed authentication attempt
+                await logAuthenticationAttempt(false, {
+                    ipAddress: req.ip,
+                    userAgent: req.get('User-Agent'),
+                    email: email,
+                    sessionId: req.sessionID,
+                    requestPath: req.path,
+                    requestMethod: req.method,
+                    error: 'Invalid credentials'
+                });
+                
                 res.redirect('/login?error=authentication_failed');
                 return;
             }
@@ -1705,15 +1756,104 @@ app.route('/admin/users')
     }
 });
 
+// 2.4.4: Admin logs routes - restrict access to logs to only website administrators
 app.route('/admin/logs')
 .get(isAdministrator, async (req, res) => {
     try {
         res.render(__dirname + '/views' + '/admin_logs.hbs', {
-            layout: false
+            layout: false,
+            loggedInUser: req.session.user
         });
     } catch (error) {
         console.error('Error loading admin logs: ', error);
         res.status(500).send('Server error');
+    }
+});
+
+// 2.4.4: API endpoint to get logs data
+app.get('/admin/logs/data', isAdministrator, async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const skip = (page - 1) * limit;
+        
+        const filters = {};
+        if (req.query.level) filters.level = req.query.level;
+        if (req.query.eventType) filters.eventType = req.query.eventType;
+        if (req.query.success !== undefined) filters.success = req.query.success === 'true';
+        if (req.query.startDate) filters.startDate = req.query.startDate;
+        if (req.query.endDate) filters.endDate = req.query.endDate;
+        
+        const result = await getLogs(filters, limit, skip);
+        
+        res.json({
+            success: true,
+            logs: result.logs,
+            page: result.page,
+            totalPages: result.totalPages,
+            total: result.total
+        });
+    } catch (error) {
+        console.error('Error fetching logs:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch logs'
+        });
+    }
+});
+
+// 2.4.4: API endpoint to get log statistics
+app.get('/admin/logs/statistics', isAdministrator, async (req, res) => {
+    try {
+        const stats = await getLogStatistics();
+        res.json({
+            success: true,
+            stats
+        });
+    } catch (error) {
+        console.error('Error fetching log statistics:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch log statistics'
+        });
+    }
+});
+
+// 2.4.4: API endpoint to export logs as CSV
+app.get('/admin/logs/export', isAdministrator, async (req, res) => {
+    try {
+        const filters = {};
+        if (req.query.level) filters.level = req.query.level;
+        if (req.query.eventType) filters.eventType = req.query.eventType;
+        if (req.query.success !== undefined) filters.success = req.query.success === 'true';
+        if (req.query.startDate) filters.startDate = req.query.startDate;
+        if (req.query.endDate) filters.endDate = req.query.endDate;
+        
+        const result = await getLogs(filters, 10000, 0); // Get up to 10,000 logs for export
+        
+        // Generate CSV content
+        const csvHeader = 'Timestamp,Level,Event Type,Message,Success,User ID,User Type,IP Address\n';
+        const csvRows = result.logs.map(log => {
+            const timestamp = new Date(log.timestamp).toISOString();
+            const message = log.message.replace(/"/g, '""'); // Escape quotes
+            const userId = log.userId ? log.userId._id || log.userId : '';
+            const userType = log.userType || '';
+            const ipAddress = log.ipAddress || '';
+            
+            return `"${timestamp}","${log.level}","${log.eventType}","${message}","${log.success}","${userId}","${userType}","${ipAddress}"`;
+        }).join('\n');
+        
+        const csvContent = csvHeader + csvRows;
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="profdex_logs_${new Date().toISOString().split('T')[0]}.csv"`);
+        res.send(csvContent);
+    } catch (error) {
+        console.error('Error exporting logs:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to export logs'
+        });
     }
 });
 
@@ -2095,25 +2235,8 @@ app.route('/change-password')
     }
 });
 
-// Global error handler for authentication failures
-app.use((err, req, res, next) => {
-    console.error('Global error handler:', err);
-    
-    // Handle authentication-related errors
-    if (err.name === 'UnauthorizedError' || err.status === 401) {
-        if (req.session) {
-            req.session.destroy();
-        }
-        return res.redirect('/login');
-    }
-    
-    // Handle other errors
-    res.status(500).render(__dirname + '/views' + '/error.hbs', {
-        error: 'Server Error',
-        message: 'An unexpected error occurred.',
-        layout: false
-    });
-});
+// 2.4.1, 2.4.2: Global error handling middleware - no debugging/stack trace, generic messages
+app.use(errorHandlingMiddleware());
 
 // 404 handler - fail securely by redirecting to login
 app.use((req, res) => {

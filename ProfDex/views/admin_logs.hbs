@@ -5,6 +5,262 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>System Logs - ProfDex</title>
     <link rel="stylesheet" href="/admin_dashboard.css">
+    <style>
+        .logs-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .logs-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .logs-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .filter-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 150px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .filter-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .logs-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .log-entry {
+            display: grid;
+            grid-template-columns: auto 80px 120px 1fr auto;
+            gap: 15px;
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-entry:hover {
+            background: #f8f9fa;
+        }
+
+        .log-time {
+            color: #666;
+            font-family: monospace;
+            white-space: nowrap;
+        }
+
+        .log-level {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .log-level.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .log-level.warn {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .log-level.info {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .log-level.debug {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .log-event-type {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .log-message {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .log-success {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .log-success.true {
+            background: #4caf50;
+            color: white;
+        }
+
+        .log-success.false {
+            background: #f44336;
+            color: white;
+        }
+
+        .logs-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .pagination-btn {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            color: #333;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .pagination-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .pagination-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .no-logs {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .export-btn {
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+        }
+
+        .refresh-btn {
+            padding: 8px 16px;
+            background: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: #138496;
+        }
+
+        @media (max-width: 768px) {
+            .log-entry {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .logs-filters {
+                flex-direction: column;
+            }
+            
+            .filter-input {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="admin-container">
@@ -25,62 +281,245 @@
         <main class="admin-main">
             <div class="logs-section">
                 <div class="dashboard-card">
-                    <h3>System Activity Logs</h3>
+                    <div class="logs-header">
+                        <h3 class="logs-title">System Activity Logs</h3>
+                        <div class="logs-actions">
+                            <button class="refresh-btn" onclick="loadLogs()">Refresh</button>
+                            <button class="export-btn" onclick="exportLogs()">Export CSV</button>
+                        </div>
+                    </div>
+
+                    <!-- Statistics -->
+                    <div class="logs-stats" id="logsStats">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalLogs">-</div>
+                            <div class="stat-label">Total Logs</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="errorLogs">-</div>
+                            <div class="stat-label">Errors</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="failedAuth">-</div>
+                            <div class="stat-label">Failed Auth</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="recentActivity">-</div>
+                            <div class="stat-label">Last 24h</div>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="logs-filters">
+                        <select class="filter-select" id="levelFilter">
+                            <option value="">All Levels</option>
+                            <option value="error">Error</option>
+                            <option value="warn">Warning</option>
+                            <option value="info">Info</option>
+                            <option value="debug">Debug</option>
+                        </select>
+                        <select class="filter-select" id="eventTypeFilter">
+                            <option value="">All Events</option>
+                            <option value="authentication">Authentication</option>
+                            <option value="authorization">Authorization</option>
+                            <option value="validation">Validation</option>
+                            <option value="access_control">Access Control</option>
+                            <option value="system">System</option>
+                            <option value="user_action">User Action</option>
+                        </select>
+                        <select class="filter-select" id="successFilter">
+                            <option value="">All Results</option>
+                            <option value="true">Success</option>
+                            <option value="false">Failure</option>
+                        </select>
+                        <input type="date" class="filter-input" id="startDate" placeholder="Start Date">
+                        <input type="date" class="filter-input" id="endDate" placeholder="End Date">
+                        <button class="filter-btn" onclick="applyFilters()">Apply Filters</button>
+                    </div>
+
+                    <!-- Logs Table -->
                     <div class="logs-container">
-                        <div class="log-entry">
-                            <span class="log-time">2024-01-15 10:30:00</span>
-                            <span class="log-level">INFO</span>
-                            <span class="log-message">System startup completed</span>
+                        <div class="log-entry" style="font-weight: 600; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+                            <div>Timestamp</div>
+                            <div>Level</div>
+                            <div>Event Type</div>
+                            <div>Message</div>
+                            <div>Success</div>
                         </div>
-                        <div class="log-entry">
-                            <span class="log-time">2024-01-15 10:29:45</span>
-                            <span class="log-level">INFO</span>
-                            <span class="log-message">Admin account initialized</span>
+                        <div id="logsTable">
+                            <!-- Logs will be loaded here -->
                         </div>
-                        <div class="log-entry">
-                            <span class="log-time">2024-01-15 10:29:30</span>
-                            <span class="log-level">INFO</span>
-                            <span class="log-message">Database connection established</span>
-                        </div>
-                        <div class="log-entry">
-                            <span class="log-time">2024-01-15 10:28:15</span>
-                            <span class="log-level">INFO</span>
-                            <span class="log-message">Server started on port 3000</span>
-                        </div>
-                        <div class="log-entry">
-                            <span class="log-time">2024-01-15 10:27:45</span>
-                            <span class="log-level">INFO</span>
-                            <span class="log-message">MongoDB connection pool initialized</span>
-                        </div>
-                        <div class="log-entry">
-                            <span class="log-time">2024-01-15 10:27:30</span>
-                            <span class="log-level">INFO</span>
-                            <span class="log-message">Express application initialized</span>
-                        </div>
-                        <div class="log-entry">
-                            <span class="log-time">2024-01-15 10:27:15</span>
-                            <span class="log-level">INFO</span>
-                            <span class="log-message">Handlebars template engine configured</span>
-                        </div>
-                        <div class="log-entry">
-                            <span class="log-time">2024-01-15 10:27:00</span>
-                            <span class="log-level">INFO</span>
-                            <span class="log-message">Session middleware configured</span>
-                        </div>
-                        <div class="log-entry">
-                            <span class="log-time">2024-01-15 10:26:45</span>
-                            <span class="log-level">INFO</span>
-                            <span class="log-message">Static file serving configured</span>
-                        </div>
-                        <div class="log-entry">
-                            <span class="log-time">2024-01-15 10:26:30</span>
-                            <span class="log-level">INFO</span>
-                            <span class="log-message">ProfDex application starting...</span>
-                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="logs-pagination" id="pagination">
+                        <!-- Pagination will be generated here -->
                     </div>
                 </div>
             </div>
         </main>
     </div>
+
+    <script>
+        let currentPage = 1;
+        let currentFilters = {};
+        const logsPerPage = 50;
+
+        // Load logs on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLogs();
+            loadStatistics();
+        });
+
+        async function loadLogs(page = 1) {
+            try {
+                const filters = {
+                    level: document.getElementById('levelFilter').value,
+                    eventType: document.getElementById('eventTypeFilter').value,
+                    success: document.getElementById('successFilter').value,
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value
+                };
+
+                const queryParams = new URLSearchParams({
+                    page: page,
+                    limit: logsPerPage,
+                    ...filters
+                });
+
+                const response = await fetch(`/admin/logs/data?${queryParams}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    displayLogs(data.logs);
+                    displayPagination(data.page, data.totalPages);
+                    currentPage = page;
+                    currentFilters = filters;
+                } else {
+                    console.error('Failed to load logs:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading logs:', error);
+            }
+        }
+
+        async function loadStatistics() {
+            try {
+                const response = await fetch('/admin/logs/statistics');
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('totalLogs').textContent = data.stats.totalLogs || 0;
+                    document.getElementById('errorLogs').textContent = data.stats.errorLogs || 0;
+                    document.getElementById('failedAuth').textContent = data.stats.failedAuthAttempts || 0;
+                    document.getElementById('recentActivity').textContent = data.stats.recentActivity || 0;
+                }
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        function displayLogs(logs) {
+            const logsTable = document.getElementById('logsTable');
+            
+            if (!logs || logs.length === 0) {
+                logsTable.innerHTML = '<div class="no-logs">No logs found matching the current filters.</div>';
+                return;
+            }
+
+            const logsHtml = logs.map(log => `
+                <div class="log-entry">
+                    <div class="log-time">${formatTimestamp(log.timestamp)}</div>
+                    <div class="log-level ${log.level}">${log.level}</div>
+                    <div class="log-event-type">${log.eventType}</div>
+                    <div class="log-message">${log.message}</div>
+                    <div class="log-success ${log.success}">${log.success ? '✓' : '✗'}</div>
+                </div>
+            `).join('');
+
+            logsTable.innerHTML = logsHtml;
+        }
+
+        function displayPagination(currentPage, totalPages) {
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let paginationHtml = '';
+            
+            // Previous button
+            paginationHtml += `
+                <a href="#" class="pagination-btn ${currentPage === 1 ? 'disabled' : ''}" 
+                   onclick="loadLogs(${currentPage - 1})" ${currentPage === 1 ? 'style="pointer-events: none;"' : ''}>
+                    Previous
+                </a>
+            `;
+
+            // Page numbers
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHtml += `
+                    <a href="#" class="pagination-btn ${i === currentPage ? 'active' : ''}" 
+                       onclick="loadLogs(${i})">${i}</a>
+                `;
+            }
+
+            // Next button
+            paginationHtml += `
+                <a href="#" class="pagination-btn ${currentPage === totalPages ? 'disabled' : ''}" 
+                   onclick="loadLogs(${currentPage + 1})" ${currentPage === totalPages ? 'style="pointer-events: none;"' : ''}>
+                    Next
+                </a>
+            `;
+
+            pagination.innerHTML = paginationHtml;
+        }
+
+        function applyFilters() {
+            loadLogs(1);
+        }
+
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString();
+        }
+
+        async function exportLogs() {
+            try {
+                const filters = {
+                    level: document.getElementById('levelFilter').value,
+                    eventType: document.getElementById('eventTypeFilter').value,
+                    success: document.getElementById('successFilter').value,
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value
+                };
+
+                const queryParams = new URLSearchParams({
+                    export: 'true',
+                    ...filters
+                });
+
+                const response = await fetch(`/admin/logs/export?${queryParams}`);
+                const blob = await response.blob();
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `profdex_logs_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                console.error('Error exporting logs:', error);
+                alert('Failed to export logs');
+            }
+        }
+    </script>
 </body>
 </html>

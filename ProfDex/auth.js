@@ -79,8 +79,20 @@ function logSecurityEvent(level, message, context = {}) {
     // Log to console for development/debugging
     console.log(`[SECURITY ${level.toUpperCase()}] ${timestamp}: ${message}`, logEntry.context);
     
-    // In production, this would be logged to a secure logging system
-    // TODO: Implement secure logging to file or external service
+    // 2.4.7: Log all access control failures
+    if (level === 'error' || level === 'warn') {
+        // Import the logging function dynamically to avoid circular dependencies
+        const { logAccessControlFailure } = require('./error_handling');
+        logAccessControlFailure({
+            message,
+            details: logEntry.context,
+            level,
+            timestamp: new Date(),
+            component: 'authorization'
+        }).catch(err => {
+            console.error('Failed to log security event:', err);
+        });
+    }
 }
 
 /**

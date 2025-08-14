@@ -181,10 +181,19 @@ function logValidationEvent(level, message, details = {}) {
 
     console.log(`[VALIDATION ${level.toUpperCase()}] ${message}`, details);
     
-    // In production, this would be sent to a security logging system
+    // 2.4.5: Log all input validation failures
     if (level === 'error' || level === 'security') {
-        // Log to security monitoring system
-        console.error(`SECURITY VALIDATION ${level.toUpperCase()}: ${message}`, details);
+        // Import the logging function dynamically to avoid circular dependencies
+        const { logValidationFailure } = require('./error_handling');
+        logValidationFailure({
+            message,
+            details,
+            level,
+            timestamp: new Date(),
+            component: 'data_validation'
+        }).catch(err => {
+            console.error('Failed to log validation event:', err);
+        });
     }
 }
 
