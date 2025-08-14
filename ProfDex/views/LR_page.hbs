@@ -167,9 +167,9 @@
                         <select class="registerinput" name="course">
                             <option value="">Select a Course</option>
                             {{#if courses}}
-                                {{#each courses}}
-                                    <option value="{{_id}}">{{name}} ({{code}})</option>
-                                {{/each}}
+                            {{#each courses}}
+                                <option value="{{_id}}">{{name}} ({{code}})</option>
+                            {{/each}}
                             {{else}}
                                 <option value="" disabled>No courses available</option>
                             {{/if}}
@@ -255,19 +255,19 @@
                 } else {
                     // Additional validation based on user type
                     if (userType === 'student') {
-                        const studentID = document.querySelector('input[name="studentID"]').value.trim();
-                        const course = document.querySelector('select[name="course"]').value;
-                        
-                        if (!studentID || !course) {
-                            isValid = false;
-                            errorMessage = 'Please fill student ID and select a course';
-                        }
-                    } else if (userType === 'professor') {
-                        const teacherID = document.querySelector('input[name="teacherID"]').value.trim();
-                        
-                        if (!teacherID) {
-                            isValid = false;
-                            errorMessage = 'Please fill teacher ID';
+                const studentID = document.querySelector('input[name="studentID"]').value.trim();
+                const course = document.querySelector('select[name="course"]').value;
+                
+                if (!studentID || !course) {
+                    isValid = false;
+                    errorMessage = 'Please fill student ID and select a course';
+                }
+            } else if (userType === 'professor') {
+                const teacherID = document.querySelector('input[name="teacherID"]').value.trim();
+                
+                if (!teacherID) {
+                    isValid = false;
+                    errorMessage = 'Please fill teacher ID';
                         }
                     }
                 }

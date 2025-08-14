@@ -191,13 +191,14 @@ app.use(
         resave: false,
         saveUninitialized: false, // Don't create sessions for unauthenticated users
         cookie: {
-            maxAge: 24 * 60 * 60 * 1000,
-            expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            maxAge: 15 * 60 * 1000, // 15 minutes in milliseconds
             sameSite: 'strict',
             httpOnly: true, // Prevent XSS attacks
             secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
         },
         name: 'profdex.sid', // Change default session name for security
+        rolling: true, // Extend session on each request (within the 15-minute limit)
+        unset: 'destroy' // Destroy session when unset
     })
 );
 
@@ -205,16 +206,9 @@ app.use(async (req, res, next) => {
     // Refresh session data if user is logged in
     if (req.session.user) {
         try {
-            // Check session age (24 hours)
-            const sessionAge = Date.now() - req.session.cookie.expires.getTime();
-            const maxSessionAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-            
-            if (sessionAge > maxSessionAge) {
-                console.log('Session expired due to age');
-                req.session.destroy();
-                res.locals.loggedInUser = null;
-                return next();
-            }
+            // Check if session has been active for too long
+            // Since we're using rolling sessions, we don't need to check session age
+            // The session will automatically expire after 15 minutes of inactivity
             
             const currentUser = await User.findById(req.session.user._id);
             if (!currentUser) {
@@ -275,8 +269,8 @@ function isLoggedIn(req, res, next) {
         return res.redirect('/login');
     }
     
-    next();
-}
+        next();
+    } 
 
 function isAdministrator(req, res, next) {
     // Fail securely - deny access by default
@@ -301,8 +295,8 @@ function isAdministrator(req, res, next) {
         return res.redirect('/admin/login');
     }
     
-    next();
-}
+        next();
+    } 
 
 function isModerator(req, res, next) {
     // Fail securely - deny access by default
@@ -493,6 +487,9 @@ app.route('/editprofile')
     if (req.query.success === 'true') {
         errors.success = true;
     }
+    if (req.query.password_changed === 'true') {
+        errors.password_changed = true;
+    }
     
     var myId = req.session.user._id;
     var userData = await getUserData(myId);
@@ -582,14 +579,14 @@ app.route('/editprofile')
         // Update professor subjects - if no subjects selected, set to empty array
         const subjectsToUpdate = subjects && Array.isArray(subjects) ? subjects : [];
         
-        await Professor.updateOne(
-          { userId: myId },
-          {
-            $set: {
+          await Professor.updateOne(
+            { userId: myId },
+            {
+              $set: {
               subjects: subjectsToUpdate
+              }
             }
-          }
-        );
+          );
       }
 
       res.redirect('/editprofile?success=true');
@@ -683,15 +680,15 @@ app.route('/login')
                 } else {
                     // Redirect to role-specific page with last use parameter
                     let redirectUrl = '';
-                    if (userType === 'student') {
+                if (userType === 'student') {
                         redirectUrl = '/editprofile';
-                    } else if (userType === 'professor') {
+                } else if (userType === 'professor') {
                         redirectUrl = '/';
-                    } else if (userType === 'manager') {
+                } else if (userType === 'manager') {
                         redirectUrl = '/moderator';
-                    } else if (userType === 'administrator') {
+                } else if (userType === 'administrator') {
                         redirectUrl = '/admin';
-                    } else {
+                } else {
                         redirectUrl = '/login?error=authentication_failed';
                     }
                     
@@ -755,13 +752,13 @@ app.route('/login')
                     } else {
                         // Redirect to role-specific page with last use parameter
                         let redirectUrl = '';
-                        if (userType === 'student') {
+                    if (userType === 'student') {
                             redirectUrl = '/editprofile';
-                        } else if (userType === 'professor') {
+                    } else if (userType === 'professor') {
                             redirectUrl = '/';
-                        } else if (userType === 'manager') {
+                    } else if (userType === 'manager') {
                             redirectUrl = '/moderator';
-                        } else if (userType === 'administrator') {
+                    } else if (userType === 'administrator') {
                             redirectUrl = '/admin';
                         }
                         
@@ -780,8 +777,8 @@ app.route('/login')
                 if (result.error === 'Password validation failed' && result.details) {
                     const passwordErrors = result.details.join(', ');
                     res.redirect(`/login?error=password_validation&details=${encodeURIComponent(passwordErrors)}`);
-                } else {
-                    res.redirect('/login?error=registration_error');
+            } else {
+                res.redirect('/login?error=registration_error');
                 }
             }
         } 
@@ -1685,43 +1682,55 @@ app.post('/admin/update-role', isAdministrator, async (req, res) => {
 
 app.route('/admin/login')
 .get(async (req, res) => {
+    try {
+        console.log('Admin login GET request received');
     const errors = {};
-    if (req.query.error === 'authentication_failed') {
-        errors.authentication_failed = true;
-    }
-    if (req.query.error === 'account_locked') {
-        errors.account_locked = true;
-        errors.account_locked_reason = req.query.reason ? decodeURIComponent(req.query.reason) : 'Account is locked due to too many failed login attempts.';
-    }
-    
-    // Store the original URL to redirect back after login
-    if (req.query.returnTo) {
-        req.session.returnTo = req.query.returnTo;
-    }
-    
+        if (req.query.error === 'authentication_failed') {
+            errors.authentication_failed = true;
+        }
+        if (req.query.error === 'account_locked') {
+            errors.account_locked = true;
+            errors.account_locked_reason = req.query.reason ? decodeURIComponent(req.query.reason) : 'Account is locked due to too many failed login attempts.';
+        }
+        
+        // Store the original URL to redirect back after login
+        if (req.query.returnTo) {
+            req.session.returnTo = req.query.returnTo;
+        }
+        
+        console.log('Rendering admin login page with errors:', errors);
     res.render(__dirname + '/views' + '/admin_login.hbs', { 
         layout: false, 
         errors
     });
+    } catch (error) {
+        console.error('Error in admin login GET route:', error);
+        res.status(500).send('Internal server error');
+    }
 })
 .post(async (req, res) => {
     try {
+        console.log('Admin login POST request received');
         const { email, password } = req.body;
         
         if (!email || !password) {
+            console.log('Admin login failed: Missing email or password');
             return res.redirect('/admin/login?error=authentication_failed');
         }
         
+        console.log('Attempting admin login for email:', email);
         const loggedInUser = await loginUser(email, password, req);
         
         if (loggedInUser) {
             // Check for account locked error
             if (loggedInUser.error === 'account_locked') {
+                console.log('Admin login blocked: Account locked');
                 res.redirect(`/admin/login?error=account_locked&reason=${encodeURIComponent(loggedInUser.reason)}`);
                 return;
             }
             
             if (loggedInUser.userType === 'administrator') {
+                console.log('Admin login successful for:', email);
                 // Check if we have last use information to display
                 if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
                     // Store last use info in session for display after redirect
@@ -1736,7 +1745,7 @@ app.route('/admin/login')
                     const separator = returnTo.includes('?') ? '&' : '?';
                     const lastUseParam = loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify ? `${separator}show_last_use=true` : '';
                     res.redirect(returnTo + lastUseParam);
-                } else {
+        } else {
                     // Redirect to admin dashboard with last use parameter if needed
                     let redirectUrl = '/admin';
                     if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
@@ -1745,9 +1754,11 @@ app.route('/admin/login')
                     res.redirect(redirectUrl);
                 }
             } else {
+                console.log('Admin login failed: User is not administrator');
                 res.redirect('/admin/login?error=authentication_failed');
             }
         } else {
+            console.log('Admin login failed: Invalid credentials');
             res.redirect('/admin/login?error=authentication_failed');
         }
     } catch (error) {
@@ -1780,16 +1791,25 @@ app.route('/change-password-request')
 })
 .post(isLoggedIn, async (req, res) => {
     try {
+        console.log('=== Change Password Request POST ===');
+        console.log('Request body:', req.body);
+        console.log('Session user ID:', req.session.user._id);
+        console.log('Session user email:', req.session.user.email);
+        
         const { currentPassword } = req.body;
         
         // Validate input
         if (!currentPassword) {
+            console.log('Missing currentPassword in request body');
             res.redirect('/change-password-request?error=reauth_failed');
             return;
         }
         
+        console.log('Attempting re-authentication...');
+        
         // Re-authenticate user
         const reAuthResult = await reAuthenticateUser(req.session.user._id, currentPassword);
+        console.log('Re-authentication result:', reAuthResult);
         
         if (reAuthResult.success) {
             // Store re-authentication status in session
@@ -1797,9 +1817,11 @@ app.route('/change-password-request')
             req.session.reauthTimestamp = Date.now();
             req.session.save();
             
+            console.log('Re-authentication successful, redirecting to password change form');
             // Redirect to password change form
             res.redirect('/change-password');
         } else {
+            console.log('Re-authentication failed:', reAuthResult.error);
             if (reAuthResult.error.includes('locked')) {
                 const message = encodeURIComponent(reAuthResult.error);
                 res.redirect(`/change-password-request?error=account_locked&message=${message}`);
@@ -1863,10 +1885,16 @@ app.route('/change-password')
 })
 .post(isLoggedIn, async (req, res) => {
     try {
-        const { newPassword, confirmPassword } = req.body;
+        console.log('Change password POST request received');
+        console.log('Request body:', req.body);
+        console.log('Session user:', req.session.user ? req.session.user._id : 'No user');
+        console.log('Re-authenticated status:', req.session.reauthenticated);
+        
+        const { currentPassword, newPassword, confirmPassword } = req.body;
         
         // Validate input
-        if (!newPassword || !confirmPassword) {
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            console.log('Missing required fields - currentPassword:', !!currentPassword, 'newPassword:', !!newPassword, 'confirmPassword:', !!confirmPassword);
             res.redirect('/change-password?error=validation_error');
             return;
         }
@@ -1877,15 +1905,16 @@ app.route('/change-password')
             return;
         }
         
-        // Since re-authentication was already done, we can proceed with password change
-        // We'll use a placeholder for current password since it's already verified
-        const result = await changePassword(req.session.user._id, 'REAUTHENTICATED', newPassword);
+        // Always require re-authentication for password changes
+        console.log('Calling changePassword function...');
+        const result = await changePassword(req.session.user._id, currentPassword, newPassword);
+        console.log('changePassword result:', result);
         
         if (result.success) {
             // Clear re-authentication status after successful password change
             delete req.session.reauthenticated;
             delete req.session.reauthTimestamp;
-            res.redirect('/change-password?success=true');
+            res.redirect('/editprofile?password_changed=true');
         } else {
             if (result.error.includes('used recently')) {
                 res.redirect('/change-password?error=password_history_error');
@@ -1936,6 +1965,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Server listening on port: ${PORT}`);
     console.log(`📱 Access your application at: http://localhost:${PORT}`);
     console.log(`🔐 Admin panel available at: http://localhost:${PORT}/admin/login`);
+    console.log(`🔑 Current password pepper: ${process.env.PASSWORD_PEPPER || 'default-pepper-change-in-production'}`);
 });
 
 module.exports = app;
