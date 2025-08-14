@@ -264,9 +264,18 @@ const {
     isResourceOwner,
     allowUserTypes,
     canPerformAction,
+    canPerformActionMiddleware,
     AUTH_CONFIG,
-    hasAnyRole
+    hasAnyRole,
+    logSecurityEvent
 } = require('./auth');
+
+// Import business rules enforcement system
+const {
+    enforceBusinessRulesMiddleware,
+    validateUserBusinessRules,
+    logBusinessRuleEvent
+} = require('./business_rules');
 
 async function initializeAdminAccount() {
     try {
@@ -358,10 +367,17 @@ app.route('/createpost')
         userType
     });
 })
-.post(isLoggedIn, async (req, res) => {
-    if (req.session.user && req.session.user.userType === 'professor') {
-        return res.redirect('/?error=not_allowed');
+.post(isLoggedIn, enforceBusinessRulesMiddleware('create_review', (req) => ({
+    professorId: req.body.professorId,
+    text: req.body.text,
+    ratings: {
+        generosity: req.body.generosity,
+        difficulty: req.body.difficulty,
+        engagement: req.body.engagement,
+        proficiency: req.body.proficiency,
+        workload: req.body.workload
     }
+})), async (req, res) => {
     try {
         var myId = req.session.user._id;
         var userData = await getUserData(myId);
@@ -372,26 +388,10 @@ app.route('/createpost')
             return;
         }
         
-        if (text.length < 10) {
-            res.redirect('/createpost?error=validation_error');
-            return;
-        }
-        
         var professorData = await getProfessorData(professorId);
 
         if (!professorData) {
             res.redirect('/createpost?error=professor_error');
-            return;
-        }
-
-        // Check if user already has a review for this professor
-        const existingReview = await Post.findOne({
-            op: myId,
-            to: professorData._id
-        });
-
-        if (existingReview) {
-            res.redirect('/createpost?error=existing_review');
             return;
         }
 
@@ -414,10 +414,21 @@ app.route('/createpost')
 
         await newPost.save();
 
+        // Log successful review creation
+        logBusinessRuleEvent('info', 'Review created successfully', {
+            userId: myId,
+            professorId: professorData._id,
+            reviewId: newPost._id
+        });
+
         res.redirect('/reviewlist?id=' + professorData._id);
     } 
     catch (error) {
         console.error('Error saving review: ', error);
+        logBusinessRuleEvent('error', 'Error creating review', {
+            userId: req.session.user._id,
+            error: error.message
+        });
         res.redirect('/createpost?error=validation_error');
     }
 });
@@ -472,18 +483,17 @@ app.route('/editprofile')
         layout: false
     });
 })
-.post(isLoggedIn, async (req, res) => {
+.post(isLoggedIn, enforceBusinessRulesMiddleware('edit_profile', (req) => ({
+    firstName: req.body.firstName,
+    lastName: req.body.lastName,
+    email: req.body.email,
+    bio: req.body.bio
+})), async (req, res) => {
     try {
       const myId = req.session.user._id;
       const { firstName, lastName, email, studentID, course, bio } = req.body;
 
       if (!firstName || !lastName || !email) {
-        res.redirect('/editprofile?error=validation_error');
-        return;
-      }
-
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
         res.redirect('/editprofile?error=validation_error');
         return;
       }
@@ -533,10 +543,20 @@ app.route('/editprofile')
           );
       }
 
+      // Log successful profile update
+      logBusinessRuleEvent('info', 'Profile updated successfully', {
+        userId: myId,
+        userType: req.session.user.userType
+      });
+
       res.redirect('/editprofile?success=true');
     } 
     catch (error) {
       console.error('Error updating profile: ', error);
+      logBusinessRuleEvent('error', 'Error updating profile', {
+        userId: req.session.user._id,
+        error: error.message
+      });
       res.redirect('/editprofile?error=validation_error');
     }
 });
@@ -693,7 +713,7 @@ app.route('/login')
                         const separator = returnTo.includes('?') ? '&' : '?';
                         const lastUseParam = loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify ? `${separator}show_last_use=true` : '';
                         res.redirect(returnTo + lastUseParam);
-                    } else {
+                } else {
                         // Redirect to role-specific page with last use parameter
                         let redirectUrl = '';
                     if (userType === AUTH_CONFIG.USER_TYPES.STUDENT) {
@@ -1118,12 +1138,10 @@ app.post('/deletecomment', isLoggedIn, async (req, res) => {
     }
 });
 
-app.post('/delete-review-and-comments', isLoggedIn, async (req, res) => {
+app.post('/delete-review-and-comments', isLoggedIn, enforceBusinessRulesMiddleware('delete_review', (req) => ({
+    reviewId: req.body.reviewId
+})), async (req, res) => {
     try {
-        if (!req.session.user) {
-            return res.status(403).send('Forbidden');
-        }
-        
         const { reviewId } = req.body;
         
         // Get the post data to check ownership
@@ -1132,17 +1150,17 @@ app.post('/delete-review-and-comments', isLoggedIn, async (req, res) => {
             return res.status(404).send('Review not found');
         }
         
-        // Check if user owns the review or is a manager/administrator
-        const isOwner = postData.op && postData.op.toString() === req.session.user._id;
-        const canModerate = canPerformAction(req.session.user, 'moderate_reviews');
-        
-        if (!isOwner && !canModerate) {
-            return res.status(403).send('Forbidden - You can only delete your own reviews');
-        }
-        
         // Delete comments first, then the post
         await Comment.deleteMany({ post: reviewId });
         await deletePost(reviewId);
+        
+        // Log successful deletion
+        logBusinessRuleEvent('info', 'Review deleted successfully', {
+            userId: req.session.user._id,
+            userType: req.session.user.userType,
+            reviewId: reviewId,
+            reviewOwner: postData.op
+        });
         
         // Redirect based on user type
         if (hasAnyRole(['student', 'professor'], req.session.user)) {
@@ -1152,6 +1170,12 @@ app.post('/delete-review-and-comments', isLoggedIn, async (req, res) => {
         }
     } catch (error) {
         console.error('Error deleting review and comments:', error);
+        logBusinessRuleEvent('error', 'Error deleting review', {
+            userId: req.session.user._id,
+            userType: req.session.user.userType,
+            reviewId: req.body.reviewId,
+            error: error.message
+        });
         res.status(500).send('Server error');
     }
 });
@@ -1571,7 +1595,7 @@ app.route('/admin/logs')
     }
 });
 
-app.post('/admin/delete-user', isAdministrator, async (req, res) => {
+app.post('/admin/delete-user', canPerformActionMiddleware('delete_user'), async (req, res) => {
     try {
         console.log('Full request body:', req.body);
         const { userId } = req.body;
@@ -1584,10 +1608,29 @@ app.post('/admin/delete-user', isAdministrator, async (req, res) => {
             return res.status(400).json({ error: 'User ID is required' });
         }
         
+        // Additional fail-secure validation: prevent self-deletion
+        if (userId === req.session.user._id.toString()) {
+            logSecurityEvent('warn', 'Admin attempted to delete their own account', {
+                ipAddress: req.ip,
+                userAgent: req.get('User-Agent'),
+                userId: req.session.user._id,
+                userType: req.session.user.userType
+            });
+            return res.status(403).json({ error: 'Cannot delete your own account' });
+        }
+        
         const result = await deleteUser(userId);
         
         if (result) {
             console.log('User deletion successful:', result.email);
+            logSecurityEvent('info', 'User deleted successfully', {
+                ipAddress: req.ip,
+                userAgent: req.get('User-Agent'),
+                adminUserId: req.session.user._id,
+                adminUserType: req.session.user.userType,
+                deletedUserId: userId,
+                deletedUserEmail: result.email
+            });
             res.json({ success: true, message: 'User deleted successfully' });
         } else {
             console.log('User deletion failed - no result returned');
@@ -1595,11 +1638,19 @@ app.post('/admin/delete-user', isAdministrator, async (req, res) => {
         }
     } catch (error) {
         console.error('Error deleting user: ', error);
+        logSecurityEvent('error', 'Error deleting user', {
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent'),
+            adminUserId: req.session.user._id,
+            adminUserType: req.session.user.userType,
+            targetUserId: req.body.userId,
+            error: error.message
+        });
         res.status(500).json({ error: 'Server error: ' + error.message });
     }
 });
 
-app.post('/admin/update-role', isAdministrator, async (req, res) => {
+app.post('/admin/update-role', canPerformActionMiddleware('update_user_role'), async (req, res) => {
     try {
         const { userId, newRole } = req.body;
         console.log(`Admin attempting to update user ${userId} to role: ${newRole}`);
@@ -1608,10 +1659,46 @@ app.post('/admin/update-role', isAdministrator, async (req, res) => {
             return res.status(400).json({ error: 'User ID and new role are required' });
         }
         
+        // Additional fail-secure validation: validate role
+        const validRoles = Object.values(AUTH_CONFIG.USER_TYPES);
+        if (!validRoles.includes(newRole)) {
+            logSecurityEvent('warn', 'Invalid role update attempt', {
+                ipAddress: req.ip,
+                userAgent: req.get('User-Agent'),
+                adminUserId: req.session.user._id,
+                adminUserType: req.session.user.userType,
+                targetUserId: userId,
+                invalidRole: newRole,
+                validRoles
+            });
+            return res.status(400).json({ error: 'Invalid role specified' });
+        }
+        
+        // Additional fail-secure validation: prevent self-role-change
+        if (userId === req.session.user._id.toString()) {
+            logSecurityEvent('warn', 'Admin attempted to change their own role', {
+                ipAddress: req.ip,
+                userAgent: req.get('User-Agent'),
+                userId: req.session.user._id,
+                userType: req.session.user.userType,
+                attemptedRole: newRole
+            });
+            return res.status(403).json({ error: 'Cannot change your own role' });
+        }
+        
         const result = await updateUserRole(userId, newRole);
         
         if (result) {
             console.log(`Successfully updated user ${userId} to role: ${newRole}`);
+            logSecurityEvent('info', 'User role updated successfully', {
+                ipAddress: req.ip,
+                userAgent: req.get('User-Agent'),
+                adminUserId: req.session.user._id,
+                adminUserType: req.session.user.userType,
+                targetUserId: userId,
+                oldRole: result.userType,
+                newRole: newRole
+            });
             res.json({ success: true, message: 'User role updated successfully' });
         } else {
             console.log(`Failed to update user ${userId} to role: ${newRole}`);
@@ -1619,6 +1706,15 @@ app.post('/admin/update-role', isAdministrator, async (req, res) => {
         }
     } catch (error) {
         console.error('Error updating user role: ', error);
+        logSecurityEvent('error', 'Error updating user role', {
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent'),
+            adminUserId: req.session.user._id,
+            adminUserType: req.session.user.userType,
+            targetUserId: req.body.userId,
+            attemptedRole: req.body.newRole,
+            error: error.message
+        });
         res.status(500).json({ error: 'Server error: ' + error.message });
     }
 });
