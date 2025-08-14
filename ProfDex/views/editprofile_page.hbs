@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="navbar.css">
 </head>
 <body>
+    <!-- Toast Notification Container for Last Use Information -->
+    <div class="toast-container" id="toastContainer"></div>
+    
     <div id="navbar">
         <a class="mainpage" href="/">Profdex</a>
         <span class="navbar-buttons">
@@ -73,12 +76,30 @@
                                     <span>Please fill all required fields with valid information.</span>
                                 </div>
                             {{/if}}
+                            {{#if errors.data_validation}}
+                                <div class="alert alert-error">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="15" y1="9" x2="9" y2="15"/>
+                                        <line x1="9" y1="9" x2="15" y2="15"/>
+                                    </svg>
+                                    <span>Data validation failed. Please check your input and try again.</span>
+                                </div>
+                            {{/if}}
                             {{#if errors.success}}
                                 <div class="alert alert-success">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <polyline points="20,6 9,17 4,12"/>
                                     </svg>
                                     <span>Profile updated successfully!</span>
+                                </div>
+                            {{/if}}
+                            {{#if errors.password_changed}}
+                                <div class="alert alert-success">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20,6 9,17 4,12"/>
+                                    </svg>
+                                    <span>Password changed successfully!</span>
                                 </div>
                             {{/if}}
 
@@ -120,23 +141,47 @@
                             </div>
                             {{/if}}
 
-                            {{#if subjects}}
+                            {{#if (eq userType 'professor')}}
                             <div class="form-row">
                                 <div class="form-group full-width">
                                     <label for="subjects">Subjects</label>
-                                    <select id="subjects" class="form-input" name="subjects" multiple>
-                                        {{#each subjects}}
-                                            <option value="{{_id}}">{{name}} ({{code}})</option>
-                                        {{/each}}
-                                    </select>
-                                    <div class="form-help">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                                            <line x1="12" y1="17" x2="12.01" y2="17"/>
-                                        </svg>
-                                        <span>Hold Ctrl (or Cmd on Mac) to select multiple subjects</span>
-                                    </div>
+                                    {{#if professorSubjects.length}}
+                                        <select id="subjects" class="form-input" name="subjects" multiple>
+                                            {{#each subjects}}
+                                                <option value="{{_id}}" {{#if (in _id ../professorSubjects)}}selected{{/if}}>{{name}} ({{code}})</option>
+                                            {{/each}}
+                                        </select>
+                                        <div class="form-help">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                            </svg>
+                                            <span>Hold Ctrl (or Cmd on Mac) to select multiple subjects</span>
+                                        </div>
+                                    {{else}}
+                                        <div class="no-subjects-message">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                            </svg>
+                                            <span>The professor has chosen not to display any information.</span>
+                                        </div>
+                                        <div class="form-help">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                            </svg>
+                                            <span>You can select subjects below to display them</span>
+                                        </div>
+                                        <select id="subjects" class="form-input" name="subjects" multiple>
+                                            {{#each subjects}}
+                                                <option value="{{_id}}">{{name}} ({{code}})</option>
+                                            {{/each}}
+                                        </select>
+                                    {{/if}}
                                 </div>
                             </div>
                             {{/if}}
@@ -145,6 +190,36 @@
                                 <div class="form-group full-width">
                                     <label for="bio">Bio</label>
                                     <textarea id="bio" class="form-textarea" name="bio" placeholder="Tell us about yourself..." rows="4">{{ studentData.bio }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <div class="security-questions-section">
+                                        <h3>Security Questions</h3>
+                                        <p>Set up security questions for password recovery</p>
+                                        <a href="/setup-security-questions" class="setup-security-btn">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                            </svg>
+                                            Setup Security Questions
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <div class="password-change-section">
+                                        <h3>Change Password</h3>
+                                        <p>Update your password to keep your account secure</p>
+                                        <a href="/change-password-request" class="change-password-btn">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M15 7a2 2 0 0 1 2 2m4 0a6 6 0 0 1-7.743 5.743L11 17H9v2H7v2H4a1 1 0 0 1-1-1v-2.586a1 1 0 0 1 .293-.707l5.964-5.964A6 6 0 1 1 21 9z"/>
+                                            </svg>
+                                            Change Password
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
 
@@ -224,5 +299,73 @@
             {{/unless}}
         </div>
     </div>
+
+    <script>
+        // Toast Notification System for Last Use Information
+        function showToast(message, type = 'info', duration = 5000) {
+            const toastContainer = document.getElementById('toastContainer');
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            // Create toast content
+            toast.innerHTML = `
+                <div class="toast-header">
+                    <div class="toast-title">Last Account Activity</div>
+                    <button class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+                </div>
+                <div class="toast-message">${message}</div>
+            `;
+            
+            // Add toast to container
+            toastContainer.appendChild(toast);
+            
+            // Show toast with animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            // Auto-remove after specified duration
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        if (toast.parentElement) {
+                            toast.remove();
+                        }
+                    }, 300);
+                }
+            }, duration);
+        }
+
+        // Check if we should show last use notification
+        function checkForLastUseNotification() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const showLastUse = urlParams.get('show_last_use');
+            
+            if (showLastUse === 'true') {
+                // Get last use info from server data
+                {{#if lastUseInfo}}
+                    const lastUseInfo = {
+                        message: "{{lastUseInfo.message}}",
+                        type: "{{lastUseInfo.lastUseType}}" === "unsuccessful" ? "warning" : "info"
+                    };
+                    showToast(lastUseInfo.message, lastUseInfo.type, 5000);
+                {{else}}
+                    showToast('Welcome back! Your account activity has been recorded.', 'info', 5000);
+                {{/if}}
+                
+                // Clean up the URL parameter
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            checkForLastUseNotification();
+        });
+    </script>
 </body>
 </html>

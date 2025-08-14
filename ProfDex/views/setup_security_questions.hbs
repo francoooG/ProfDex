@@ -1,0 +1,260 @@
+<html>
+<head>
+    <link rel="stylesheet" href="navbar.css">
+    <link rel="stylesheet" href="LR_page.css">
+    <style>
+        .setup-questions-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .setup-questions-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .setup-questions-header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .setup-questions-header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .question-selection-section {
+            margin-bottom: 25px;
+        }
+        
+        .question-selection-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .question-group {
+            margin-bottom: 20px;
+        }
+        
+        .question-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .question-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        
+        .question-group input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .answer-requirements {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .answer-requirements h4 {
+            margin: 0 0 8px 0;
+            color: #495057;
+        }
+        
+        .answer-requirements ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .answer-requirements li {
+            margin-bottom: 3px;
+        }
+        
+        .setup-questions-form button {
+            width: 100%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .setup-questions-form button:hover {
+            background: #0056b3;
+        }
+        
+        .back-to-profile {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .back-to-profile a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        
+        .back-to-profile a:hover {
+            text-decoration: underline;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .success-message {
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .info-message {
+            color: #0c5460;
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="homepage-container">
+        <div class="setup-questions-container">
+            <div class="setup-questions-header">
+                <h1>Setup Security Questions</h1>
+                <p>Choose and answer three security questions for password recovery</p>
+            </div>
+            
+            {{#if errors.security_question_validation}}
+                <div class="error-message">
+                    Security question validation failed: {{errors.security_question_validation_details}}
+                </div>
+            {{/if}}
+            
+            {{#if errors.setup_failed}}
+                <div class="error-message">
+                    Failed to setup security questions. Please try again.
+                </div>
+            {{/if}}
+            
+            {{#if errors.questions_setup}}
+                <div class="success-message">
+                    Security questions have been setup successfully!
+                </div>
+            {{/if}}
+            
+            <div class="answer-requirements">
+                <h4>Answer Requirements:</h4>
+                <ul>
+                    <li>Minimum 3 characters, maximum 100 characters</li>
+                    <li>Answers should be specific and unique</li>
+                    <li>Avoid common answers like "dog", "cat", "red", etc.</li>
+                    <li>Consider using mixed case, numbers, or special characters for better security</li>
+                    <li>Make sure you can remember your answers</li>
+                </ul>
+            </div>
+            
+            <form class="setup-questions-form" action="/setup-security-questions" method="POST">
+                <div class="question-selection-section">
+                    <h3>Security Questions</h3>
+                    
+                    <div class="question-group">
+                        <label for="question1">Question 1:</label>
+                        <select id="question1" name="question1" required>
+                            <option value="">Select a question</option>
+                            {{#each questions}}
+                                <option value="{{id}}">{{question}}</option>
+                            {{/each}}
+                        </select>
+                        <input type="text" id="answer1" name="answer1" placeholder="Your answer" required>
+                    </div>
+                    
+                    <div class="question-group">
+                        <label for="question2">Question 2:</label>
+                        <select id="question2" name="question2" required>
+                            <option value="">Select a question</option>
+                            {{#each questions}}
+                                <option value="{{id}}">{{question}}</option>
+                            {{/each}}
+                        </select>
+                        <input type="text" id="answer2" name="answer2" placeholder="Your answer" required>
+                    </div>
+                    
+                    <div class="question-group">
+                        <label for="question3">Question 3:</label>
+                        <select id="question3" name="question3" required>
+                            <option value="">Select a question</option>
+                            {{#each questions}}
+                                <option value="{{id}}">{{question}}</option>
+                            {{/each}}
+                        </select>
+                        <input type="text" id="answer3" name="answer3" placeholder="Your answer" required>
+                    </div>
+                </div>
+                
+                <button type="submit">Setup Security Questions</button>
+            </form>
+            
+            <div class="back-to-profile">
+                <a href="/editprofile">← Back to Profile</a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Prevent duplicate question selection
+        document.addEventListener('DOMContentLoaded', function() {
+            const selects = document.querySelectorAll('select[name^="question"]');
+            
+            selects.forEach(select => {
+                select.addEventListener('change', function() {
+                    const selectedValue = this.value;
+                    const currentSelect = this;
+                    
+                    selects.forEach(otherSelect => {
+                        if (otherSelect !== currentSelect && otherSelect.value === selectedValue) {
+                            otherSelect.value = '';
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

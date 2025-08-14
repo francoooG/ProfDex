@@ -284,3 +284,80 @@ body {
         padding: 8px 15px;
     }
 }
+
+/* Toast Notification Styles for Last Use Information */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.toast {
+    background: #17a2b8;
+    color: white;
+    padding: 20px 30px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+    transform: translateY(-100px);
+    transition: transform 0.4s ease;
+    max-width: 500px;
+    font-size: 16px;
+    text-align: center;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.toast.show {
+    transform: translateY(0);
+}
+
+.toast.info {
+    background: #17a2b8;
+}
+
+.toast.warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.toast.success {
+    background: #28a745;
+}
+
+.toast.error {
+    background: #dc3545;
+}
+
+.toast-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.toast-title {
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+}
+
+.toast-message {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.4;
+}

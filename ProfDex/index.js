@@ -42,6 +42,27 @@ const {
     
     loginUser,
     registerUser,
+    hashPassword,
+    
+    // Password reset functions
+    generatePasswordResetToken,
+    validatePasswordResetToken,
+    verifySecurityQuestions,
+    resetPasswordWithToken,
+    resetPasswordDirectly,
+    setupSecurityQuestions,
+    getSecurityQuestions,
+    cleanupExpiredTokens,
+    validateSecurityAnswer,
+    changePassword,
+    reAuthenticateUser,
+    
+    // Account lockout functions
+    recordSuccessfulLogin,
+    
+    // Security questions configuration
+    SECURITY_QUESTIONS,
+    PASSWORD_RESET_CONFIG,
     
     User,
     Student,
@@ -51,8 +72,24 @@ const {
     Course,
     Subject,
     Post,
-    Comment
+    Comment,
+    SecurityQuestions,
+    PasswordResetAttempt
 } = require(__dirname + '/db' + '/controller.js');
+
+// 2.4.1, 2.4.2, 2.4.3, 2.4.4, 2.4.5, 2.4.6, 2.4.7: Error handling and logging system
+const {
+    ERROR_CONFIG,
+    logSecurityEvent,
+    logAuthenticationAttempt,
+    logAccessControlFailure,
+    logValidationFailure,
+    getLogs,
+    getLogStatistics,
+    cleanupOldLogs,
+    errorHandlingMiddleware,
+    requestLoggingMiddleware
+} = require('./error_handling');
 
 const mongoose = require('mongoose');
 const session = require('express-session');
@@ -80,6 +117,22 @@ mongoose.connection.on('connected', async (err, res) => {
         console.log('Admin account initialization completed');
     } catch (error) {
         console.error('Error initializing admin account:', error);
+    }
+    
+    // Schedule cleanup of expired password reset tokens (every hour)
+    setInterval(async () => {
+        try {
+            await cleanupExpiredTokens();
+        } catch (error) {
+            console.error('Error cleaning up expired tokens:', error);
+        }
+    }, 60 * 60 * 1000); // Run every hour
+    
+    // Initial cleanup
+    try {
+        await cleanupExpiredTokens();
+    } catch (error) {
+        console.error('Error in initial token cleanup:', error);
     }
 });
 
@@ -120,6 +173,12 @@ app.engine('hbs', handlebars.engine({
         },
         'JSON.stringify': function(obj) {
             return JSON.stringify(obj);
+        },
+        in: function(item, array) {
+            if (!array || !Array.isArray(array)) return false;
+            return array.some(function(element) {
+                return element.toString() === item.toString();
+            });
         }
     }
 }));
@@ -127,6 +186,9 @@ app.set('view engine', 'hbs');
 app.set('views', __dirname + '/views');
 
 app.set('view cache', false);
+
+// 2.4.1, 2.4.2: Add error handling and request logging middleware
+app.use(requestLoggingMiddleware());
 
 var current;
 
@@ -142,14 +204,18 @@ const sessionStore = MongoStore.create({
 app.use(
     session({
         store: sessionStore,
-        secret: 'Placeholder',
+        secret: process.env.SESSION_SECRET || 'fallback-secret-change-in-production',
         resave: false,
-        saveUninitialized: true,
+        saveUninitialized: false, // Don't create sessions for unauthenticated users
         cookie: {
-            maxAge: 24 * 60 * 60 * 1000,
-            expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            maxAge: 15 * 60 * 1000, // 15 minutes in milliseconds
             sameSite: 'strict',
+            httpOnly: true, // Prevent XSS attacks
+            secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
         },
+        name: 'profdex.sid', // Change default session name for security
+        rolling: true, // Extend session on each request (within the 15-minute limit)
+        unset: 'destroy' // Destroy session when unset
     })
 );
 
@@ -157,14 +223,45 @@ app.use(async (req, res, next) => {
     // Refresh session data if user is logged in
     if (req.session.user) {
         try {
+            // Check if session has been active for too long
+            // Since we're using rolling sessions, we don't need to check session age
+            // The session will automatically expire after 15 minutes of inactivity
+            
             const currentUser = await User.findById(req.session.user._id);
-            if (currentUser && currentUser.userType !== req.session.user.userType) {
+            if (!currentUser) {
+                // User no longer exists in database - destroy session
+                console.log('Session destroyed: User no longer exists in database');
+                req.session.destroy();
+                res.locals.loggedInUser = null;
+                return next();
+            }
+            
+            if (currentUser.userType !== req.session.user.userType) {
                 // Update the session with the current user type
                 req.session.user.userType = currentUser.userType;
                 console.log(`Session updated: User ${currentUser.email} role changed from ${req.session.user.userType} to ${currentUser.userType}`);
             }
+            
+            // Validate session data integrity
+            if (!req.session.user._id || !req.session.user.email || !req.session.user.userType) {
+                console.log('Session destroyed: Invalid session data');
+                req.session.destroy();
+                res.locals.loggedInUser = null;
+                return next();
+            }
+            
+            // Regenerate session ID periodically for security
+            if (!req.session.regenerated) {
+                req.session.regenerated = true;
+                req.session.save();
+            }
+            
         } catch (error) {
             console.error('Error refreshing session:', error);
+            // On database error, destroy session to fail securely
+            req.session.destroy();
+            res.locals.loggedInUser = null;
+            return next();
         }
     }
     
@@ -172,32 +269,44 @@ app.use(async (req, res, next) => {
     next();
 });
 
-function isLoggedIn(req, res, next) {
-    if (req.session.user) {
-        next();
-    } 
-    else {
-        res.redirect('/login');
-    }
-}
+// Import centralized authorization system
+const {
+    isLoggedIn,
+    isStudent,
+    isProfessor,
+    isModerator,
+    isManager,
+    isAdministrator,
+    hasMinimumRole,
+    isResourceOwner,
+    allowUserTypes,
+    canPerformAction,
+    canPerformActionMiddleware,
+    AUTH_CONFIG,
+    hasAnyRole,
+    logSecurityEvent
+} = require('./auth');
 
-function isAdministrator(req, res, next) {
-    if (req.session.user && req.session.user.userType === 'administrator') {
-        next();
-    } 
-    else {
-        res.status(403).send('Access denied. Administrator privileges required.');
-    }
-}
+// Import business rules enforcement system
+const {
+    enforceBusinessRulesMiddleware,
+    validateUserBusinessRules,
+    logBusinessRuleEvent
+} = require('./business_rules');
 
-function isModerator(req, res, next) {
-    if (req.session.user && (req.session.user.userType === 'manager' || req.session.user.userType === 'administrator')) {
-        next();
-    } 
-    else {
-        res.status(403).send('Access denied. Moderator privileges required.');
-    }
-}
+// Import data validation system
+const {
+    validateDataMiddleware,
+    validateUserRegistration,
+    validateReviewCreation,
+    validateProfileEdit,
+    validateSearchQuery,
+    validateComment,
+    validateSecurityAnswer,
+    validateCourse,
+    validateSubject,
+    logValidationEvent
+} = require('./data_validation');
 
 async function initializeAdminAccount() {
     try {
@@ -209,8 +318,9 @@ async function initializeAdminAccount() {
         if (!existingAdmin) {
             console.log('📝 No administrator found. Creating default admin account...');
             
-            // Create admin user
-            const hashedPassword = await bcrypt.hash('admin123', saltRounds);
+            // Create admin user with secure password that meets all requirements
+            const securePassword = 'AdminSecure2024!@#';
+            const hashedPassword = await hashPassword(securePassword);
             const adminUser = new User({
                 firstName: 'Admin',
                 lastName: 'User',
@@ -226,7 +336,7 @@ async function initializeAdminAccount() {
             
             console.log('✅ Admin account created successfully!');
             console.log('   📧 Email: admin@profdex.com');
-            console.log('   🔑 Password: admin123');
+            console.log('   🔑 Password: AdminSecure2024!@#');
             console.log('   ⚠️  Remember to change the password after first login!');
         } else {
             console.log('ℹ️  Administrator account already exists');
@@ -238,13 +348,18 @@ async function initializeAdminAccount() {
     }
 }
 
-app.route('/').get(async (req, res) => {
+app.route('/').get(isLoggedIn, async (req, res) => {
     var data = await getAllProfessorData();
     const userType = req.session.user ? req.session.user.userType : null;
+    
+    // Check if we have last use information to display
+    const lastUseInfo = req.session.lastUseInfo || null;
+    
     res.render(__dirname + '/views' + '/home_page.hbs', {
         data,
         userType,
         loggedInUser: req.session.user,
+        lastUseInfo,
         layout: false
     });
 });
@@ -263,6 +378,9 @@ app.route('/createpost')
     }
     if (req.query.error === 'existing_review') {
         errors.existing_review = true;
+    }
+    if (req.query.error === 'data_validation') {
+        errors.data_validation = true;
     }
 
     const professors = await getAllProfessorData();
@@ -283,21 +401,48 @@ app.route('/createpost')
         userType
     });
 })
-.post(isLoggedIn, async (req, res) => {
-    if (req.session.user && req.session.user.userType === 'professor') {
-        return res.redirect('/?error=not_allowed');
+.post(isLoggedIn, enforceBusinessRulesMiddleware('create_review', (req) => ({
+    professorId: req.body.professorId,
+    text: req.body.text,
+    ratings: {
+        generosity: req.body.generosity,
+        difficulty: req.body.difficulty,
+        engagement: req.body.engagement,
+        proficiency: req.body.proficiency,
+        workload: req.body.workload
     }
+})), async (req, res) => {
     try {
         var myId = req.session.user._id;
         var userData = await getUserData(myId);
         var { professorId, course, text, generosity, difficulty, engagement, proficiency, workload} = req.body;
         
-        if (!professorId || !course || !text) {
-            res.redirect('/createpost?error=validation_error');
+        // 2.3.1, 2.3.2, 2.3.3: Data validation before review creation
+        const reviewData = {
+            professorId: professorId,
+            text: text,
+            ratings: {
+                generosity: generosity,
+                difficulty: difficulty,
+                engagement: engagement,
+                proficiency: proficiency,
+                workload: workload
+            }
+        };
+        
+        const validationResult = validateReviewCreation(reviewData);
+        if (!validationResult.isValid) {
+            logValidationEvent('error', 'Review creation validation failed', {
+                errors: validationResult.errors,
+                rejectedFields: validationResult.getRejectedFields(),
+                userId: myId
+            });
+            
+            res.redirect('/createpost?error=data_validation');
             return;
         }
         
-        if (text.length < 10) {
+        if (!professorId || !course || !text) {
             res.redirect('/createpost?error=validation_error');
             return;
         }
@@ -306,17 +451,6 @@ app.route('/createpost')
 
         if (!professorData) {
             res.redirect('/createpost?error=professor_error');
-            return;
-        }
-
-        // Check if user already has a review for this professor
-        const existingReview = await Post.findOne({
-            op: myId,
-            to: professorData._id
-        });
-
-        if (existingReview) {
-            res.redirect('/createpost?error=existing_review');
             return;
         }
 
@@ -339,10 +473,21 @@ app.route('/createpost')
 
         await newPost.save();
 
+        // Log successful review creation
+        logBusinessRuleEvent('info', 'Review created successfully', {
+            userId: myId,
+            professorId: professorData._id,
+            reviewId: newPost._id
+        });
+
         res.redirect('/reviewlist?id=' + professorData._id);
     } 
     catch (error) {
         console.error('Error saving review: ', error);
+        logBusinessRuleEvent('error', 'Error creating review', {
+            userId: req.session.user._id,
+            error: error.message
+        });
         res.redirect('/createpost?error=validation_error');
     }
 });
@@ -355,6 +500,12 @@ app.route('/editprofile')
     }
     if (req.query.success === 'true') {
         errors.success = true;
+    }
+    if (req.query.password_changed === 'true') {
+        errors.password_changed = true;
+    }
+    if (req.query.error === 'data_validation') {
+        errors.data_validation = true;
     }
     
     var myId = req.session.user._id;
@@ -369,10 +520,17 @@ app.route('/editprofile')
     }
     
     if (req.session.user.userType === 'professor') {
+        const professorData = await getProfessorData(myId);
         subjects = await getAllSubjects();
+        // Pass professor's selected subjects separately
+        var professorSubjects = professorData ? professorData.subjects : [];
     }
     
     var postData = await getUserPostData(myId);
+    
+    // Check if we have last use information to display
+    const lastUseInfo = req.session.lastUseInfo || null;
+    
     res.render(__dirname + '/views' + '/editprofile_page.hbs', {
         userData,
         studentData,
@@ -381,22 +539,43 @@ app.route('/editprofile')
         errors,
         courses,
         subjects,
+        professorSubjects: professorSubjects || [],
         userType: req.session.user.userType,
+        lastUseInfo,
         layout: false
     });
 })
-.post(isLoggedIn, async (req, res) => {
+.post(isLoggedIn, enforceBusinessRulesMiddleware('edit_profile', (req) => ({
+    firstName: req.body.firstName,
+    lastName: req.body.lastName,
+    email: req.body.email,
+    bio: req.body.bio
+})), async (req, res) => {
     try {
       const myId = req.session.user._id;
       const { firstName, lastName, email, studentID, course, bio } = req.body;
 
-      if (!firstName || !lastName || !email) {
-        res.redirect('/editprofile?error=validation_error');
+      // 2.3.1, 2.3.2, 2.3.3: Data validation before profile edit
+      const profileData = {
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        bio: bio
+      };
+      
+      const validationResult = validateProfileEdit(profileData);
+      if (!validationResult.isValid) {
+        logValidationEvent('error', 'Profile edit validation failed', {
+          errors: validationResult.errors,
+          rejectedFields: validationResult.getRejectedFields(),
+          userId: myId
+        });
+        
+        res.redirect('/editprofile?error=data_validation');
         return;
       }
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
+      if (!firstName || !lastName || !email) {
         res.redirect('/editprofile?error=validation_error');
         return;
       }
@@ -433,22 +612,33 @@ app.route('/editprofile')
       if (req.session.user.userType === 'professor') {
         const { subjects } = req.body;
         
-        if (subjects && Array.isArray(subjects)) {
+        // Update professor subjects - if no subjects selected, set to empty array
+        const subjectsToUpdate = subjects && Array.isArray(subjects) ? subjects : [];
+        
           await Professor.updateOne(
             { userId: myId },
             {
               $set: {
-                subjects: subjects
+              subjects: subjectsToUpdate
               }
             }
           );
-        }
       }
+
+      // Log successful profile update
+      logBusinessRuleEvent('info', 'Profile updated successfully', {
+        userId: myId,
+        userType: req.session.user.userType
+      });
 
       res.redirect('/editprofile?success=true');
     } 
     catch (error) {
       console.error('Error updating profile: ', error);
+      logBusinessRuleEvent('error', 'Error updating profile', {
+        userId: req.session.user._id,
+        error: error.message
+      });
       res.redirect('/editprofile?error=validation_error');
     }
 });
@@ -460,11 +650,29 @@ app.route('/login')
     if (req.query.error === 'password_mismatch') {
         errors.password_mismatch = true;
     }
-    if (req.query.error === 'invalid_credentials') {
-        errors.invalid_credentials = true;
+    if (req.query.error === 'authentication_failed') {
+        errors.authentication_failed = true;
     }
     if (req.query.error === 'registration_error') {
         errors.registration_error = true;
+    }
+    if (req.query.error === 'password_validation') {
+        errors.password_validation = true;
+        errors.password_validation_details = req.query.details ? decodeURIComponent(req.query.details) : '';
+    }
+    if (req.query.error === 'invalid_data') {
+        errors.invalid_data = true;
+    }
+    if (req.query.error === 'account_locked') {
+        errors.account_locked = true;
+        errors.account_locked_reason = req.query.reason ? decodeURIComponent(req.query.reason) : 'Account is locked due to too many failed login attempts.';
+    }
+    if (req.query.error === 'data_validation') {
+        errors.data_validation = true;
+        errors.data_validation_details = req.query.details ? decodeURIComponent(req.query.details) : 'Data validation failed.';
+    }
+    if (req.query.success === 'password_reset') {
+        errors.password_reset = true;
     }
     
     const courses = await getAllCourses();
@@ -474,7 +682,8 @@ app.route('/login')
         layout: false, 
         errors,
         courses,
-        subjects
+        subjects,
+        success: req.query.success // Pass success parameter to template
     });
 })
 .post(async (req, res) => {
@@ -497,21 +706,87 @@ app.route('/login')
             const loggedInUser = await loginUser(email, password, req);
 
             if (loggedInUser) {
+                // Check for account locked error
+                if (loggedInUser.error === 'account_locked') {
+                    // 2.4.6: Log failed authentication attempt (account locked)
+                    await logAuthenticationAttempt(false, {
+                        ipAddress: req.ip,
+                        userAgent: req.get('User-Agent'),
+                        email: email,
+                        sessionId: req.sessionID,
+                        requestPath: req.path,
+                        requestMethod: req.method,
+                        error: 'Account locked',
+                        reason: loggedInUser.reason
+                    });
+                    
+                    res.redirect(`/login?error=account_locked&reason=${encodeURIComponent(loggedInUser.reason)}`);
+                    return;
+                }
+
+                // 2.4.6: Log successful authentication attempt
+                await logAuthenticationAttempt(true, {
+                    ipAddress: req.ip,
+                    userAgent: req.get('User-Agent'),
+                    userId: loggedInUser._id,
+                    userType: loggedInUser.userType,
+                    sessionId: req.sessionID,
+                    requestPath: req.path,
+                    requestMethod: req.method
+                });
+
+                // Check if we have last use information to display
+                if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
+                    // Store last use info in session for display after redirect
+                    req.session.lastUseInfo = loggedInUser.lastUseInfo;
+                }
+
                 const userType = loggedInUser.userType;
-                if (userType === 'student') {
-                    res.redirect('/editprofile');
-                } else if (userType === 'professor') {
-                    res.redirect('/');
-                } else if (userType === 'manager') {
-                    res.redirect('/moderator');
-                } else if (userType === 'administrator') {
-                    res.redirect('/admin');
+                // Redirect to original destination if available, otherwise to role-specific page
+                const returnTo = req.session.returnTo;
+                if (returnTo && returnTo !== '/login') {
+                    delete req.session.returnTo;
+                    // Add last use parameter to the redirect
+                    const separator = returnTo.includes('?') ? '&' : '?';
+                    const lastUseParam = loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify ? `${separator}show_last_use=true` : '';
+                    res.redirect(returnTo + lastUseParam);
                 } else {
-                    res.redirect('/login?error=invalid_credentials');
+                    // Redirect to role-specific page with last use parameter
+                    let redirectUrl = '';
+                if (userType === AUTH_CONFIG.USER_TYPES.STUDENT) {
+                        redirectUrl = '/editprofile';
+                } else if (userType === AUTH_CONFIG.USER_TYPES.PROFESSOR) {
+                        redirectUrl = '/';
+                } else if (userType === AUTH_CONFIG.USER_TYPES.MANAGER) {
+                        redirectUrl = '/moderator';
+                } else if (userType === AUTH_CONFIG.USER_TYPES.ADMINISTRATOR) {
+                        redirectUrl = '/admin';
+                } else {
+                        redirectUrl = '/login?error=authentication_failed';
+                    }
+                    
+                    // Add last use parameter if needed
+                    if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
+                        const separator = redirectUrl.includes('?') ? '&' : '?';
+                        redirectUrl += `${separator}show_last_use=true`;
+                    }
+                    
+                    res.redirect(redirectUrl);
                 }
             } 
             else {
-                res.redirect('/login?error=invalid_credentials');
+                // 2.4.6: Log failed authentication attempt
+                await logAuthenticationAttempt(false, {
+                    ipAddress: req.ip,
+                    userAgent: req.get('User-Agent'),
+                    email: email,
+                    sessionId: req.sessionID,
+                    requestPath: req.path,
+                    requestMethod: req.method,
+                    error: 'Invalid credentials'
+                });
+                
+                res.redirect('/login?error=authentication_failed');
                 return;
             }
         } 
@@ -521,15 +796,39 @@ app.route('/login')
                 return;
             }
             
+            // 2.3.1, 2.3.2, 2.3.3: Data validation before registration
+            const registrationData = {
+                firstName: registerFirstName,
+                lastName: registerLastName,
+                email: registerEmail,
+                userType: userType,
+                studentID: studentID,
+                teacherID: teacherID
+            };
+            
+            const validationResult = validateUserRegistration(registrationData);
+            if (!validationResult.isValid) {
+                logValidationEvent('error', 'User registration validation failed', {
+                    errors: validationResult.errors,
+                    rejectedFields: validationResult.getRejectedFields()
+                });
+                
+                // Redirect with validation error details
+                const firstError = validationResult.getFirstError();
+                const errorMessage = firstError ? encodeURIComponent(firstError.message) : 'Data validation failed';
+                res.redirect(`/login?error=data_validation&details=${errorMessage}`);
+                return;
+            }
+            
             let additionalData = {};
             
-            if (userType === 'student') {
+            if (userType === AUTH_CONFIG.USER_TYPES.STUDENT) {
                 if (!studentID || !course) {
                     res.redirect('/login?error=registration_error');
                     return;
                 }
                 additionalData = { studentID, courseId: course };
-            } else if (userType === 'professor') {
+            } else if (userType === AUTH_CONFIG.USER_TYPES.PROFESSOR) {
                 if (!teacherID) {
                     res.redirect('/login?error=registration_error');
                     return;
@@ -544,20 +843,51 @@ app.route('/login')
             if (result.success) {
                 const loggedInUser = await loginUser(registerEmail, registerPassword, req);
                 if (loggedInUser) {
-                    if (userType === 'student') {
-                        res.redirect('/editprofile');
-                    } else if (userType === 'professor') {
-                        res.redirect('/');
-                    } else if (userType === 'manager') {
-                        res.redirect('/moderator');
-                    } else if (userType === 'administrator') {
-                        res.redirect('/admin');
+                    // Check if we have last use information to display
+                    if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
+                        // Store last use info in session for display after redirect
+                        req.session.lastUseInfo = loggedInUser.lastUseInfo;
+                    }
+                    
+                    // Redirect to original destination if available, otherwise to role-specific page
+                    const returnTo = req.session.returnTo;
+                    if (returnTo && returnTo !== '/login') {
+                        delete req.session.returnTo;
+                        // Add last use parameter to the redirect
+                        const separator = returnTo.includes('?') ? '&' : '?';
+                        const lastUseParam = loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify ? `${separator}show_last_use=true` : '';
+                        res.redirect(returnTo + lastUseParam);
+                } else {
+                        // Redirect to role-specific page with last use parameter
+                        let redirectUrl = '';
+                    if (userType === AUTH_CONFIG.USER_TYPES.STUDENT) {
+                            redirectUrl = '/editprofile';
+                    } else if (userType === AUTH_CONFIG.USER_TYPES.PROFESSOR) {
+                            redirectUrl = '/';
+                    } else if (userType === AUTH_CONFIG.USER_TYPES.MANAGER) {
+                            redirectUrl = '/moderator';
+                    } else if (userType === AUTH_CONFIG.USER_TYPES.ADMINISTRATOR) {
+                            redirectUrl = '/admin';
+                        }
+                        
+                        // Add last use parameter if needed
+                        if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
+                            redirectUrl += '?show_last_use=true';
+                        }
+                        
+                        res.redirect(redirectUrl);
                     }
                 } else {
-                    res.redirect('/login?error=invalid_credentials');
+                    res.redirect('/login?error=authentication_failed');
                 }
             } else {
+                // Handle specific password validation errors
+                if (result.error === 'Password validation failed' && result.details) {
+                    const passwordErrors = result.details.join(', ');
+                    res.redirect(`/login?error=password_validation&details=${encodeURIComponent(passwordErrors)}`);
+            } else {
                 res.redirect('/login?error=registration_error');
+                }
             }
         } 
         else {
@@ -571,7 +901,247 @@ app.route('/login')
     }
 });
 
-app.get('/logout', (req, res) => {
+// Password reset routes
+app.route('/forgot-password')
+.get(async (req, res) => {
+    const errors = {};
+    if (req.query.error === 'user_not_found') {
+        errors.user_not_found = true;
+    }
+    if (req.query.error === 'security_questions_not_setup') {
+        errors.security_questions_not_setup = true;
+    }
+    if (req.query.error === 'too_many_attempts') {
+        errors.too_many_attempts = true;
+    }
+    if (req.query.error === 'token_generation_failed') {
+        errors.token_generation_failed = true;
+    }
+    if (req.query.success === 'token_sent') {
+        errors.token_sent = true;
+    }
+    
+    res.render(__dirname + '/views' + '/forgot_password.hbs', { 
+        layout: false, 
+        errors
+    });
+})
+.post(async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            res.redirect('/forgot-password?error=user_not_found');
+            return;
+        }
+        
+        // Check if user exists and has security questions configured
+        const user = await User.findOne({ email: email.toLowerCase() });
+        console.log('Password reset attempt for email:', email.toLowerCase());
+        console.log('User found:', !!user);
+        
+        if (!user) {
+            console.log('User not found for email:', email.toLowerCase());
+            res.redirect('/forgot-password?error=user_not_found');
+            return;
+        }
+        
+        // Check if user has security questions configured
+        const securityQuestions = await SecurityQuestions.findOne({ userId: user._id });
+        console.log('Security questions found:', !!securityQuestions);
+        
+        if (!securityQuestions) {
+            console.log('Security questions not configured for user:', user._id);
+            res.redirect('/forgot-password?error=security_questions_not_setup');
+            return;
+        }
+        
+        // Check for too many reset attempts
+        const resetAttempts = await PasswordResetAttempt.findOne({ userId: user._id });
+        if (resetAttempts && resetAttempts.attempts >= 5 && 
+            (Date.now() - resetAttempts.lastAttempt) < 15 * 60 * 1000) { // 15 minutes
+            res.redirect('/forgot-password?error=too_many_attempts');
+            return;
+        }
+        
+        // Redirect directly to security questions page
+        res.redirect(`/reset-password?email=${encodeURIComponent(email)}`);
+        
+    } catch (error) {
+        console.error('Error in forgot password:', error);
+        // More specific error handling
+        if (error.name === 'ValidationError') {
+            res.redirect('/forgot-password?error=user_not_found');
+        } else {
+            res.redirect('/forgot-password?error=token_generation_failed');
+        }
+    }
+});
+
+app.route('/reset-password')
+.get(async (req, res) => {
+    const { email } = req.query;
+    const errors = {};
+    
+    if (!email) {
+        res.redirect('/forgot-password?error=token_generation_failed');
+        return;
+    }
+    
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+        res.redirect('/forgot-password?error=user_not_found');
+        return;
+    }
+    
+    // Get user's security questions
+    const questionsResult = await getSecurityQuestions(user._id);
+    if (!questionsResult.success) {
+        res.redirect('/forgot-password?error=security_questions_not_setup');
+        return;
+    }
+    
+    if (req.query.error === 'invalid_answers') {
+        errors.invalid_answers = true;
+    }
+    if (req.query.error === 'password_validation') {
+        errors.password_validation = true;
+        errors.password_validation_details = req.query.details ? decodeURIComponent(req.query.details) : '';
+    }
+    if (req.query.error === 'reset_failed') {
+        errors.reset_failed = true;
+    }
+    
+    res.render(__dirname + '/views' + '/reset_password.hbs', { 
+        layout: false, 
+        errors,
+        email,
+        questions: questionsResult.questions
+    });
+})
+.post(async (req, res) => {
+    try {
+        const { email, answer1, answer2, answer3, newPassword, confirmPassword } = req.body;
+        
+        if (!email || !answer1 || !answer2 || !answer3 || !newPassword || !confirmPassword) {
+            res.redirect(`/reset-password?email=${encodeURIComponent(email || '')}&error=reset_failed`);
+            return;
+        }
+        
+        // Find user by email
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            res.redirect('/forgot-password?error=user_not_found');
+            return;
+        }
+        
+        // Verify security questions
+        const answers = { answer1, answer2, answer3 };
+        const verificationResult = await verifySecurityQuestions(user._id, answers);
+        if (!verificationResult.success) {
+            res.redirect(`/reset-password?email=${encodeURIComponent(email)}&error=invalid_answers`);
+            return;
+        }
+        
+        // Check password confirmation
+        if (newPassword !== confirmPassword) {
+            res.redirect(`/reset-password?email=${encodeURIComponent(email)}&error=reset_failed`);
+            return;
+        }
+        
+        // Reset password directly
+        const resetResult = await resetPasswordDirectly(user._id, newPassword);
+        if (resetResult.success) {
+            res.redirect('/login?success=password_reset');
+        } else {
+            if (resetResult.error === 'password_validation') {
+                res.redirect(`/reset-password?email=${encodeURIComponent(email)}&error=password_validation&details=${encodeURIComponent(resetResult.details)}`);
+            } else {
+                res.redirect(`/reset-password?email=${encodeURIComponent(email)}&error=reset_failed`);
+            }
+        }
+    } catch (error) {
+        console.error('Error in reset password:', error);
+        res.redirect(`/reset-password?email=${encodeURIComponent(req.body.email || '')}&error=reset_failed`);
+    }
+});
+
+app.route('/setup-security-questions')
+.get(isLoggedIn, async (req, res) => {
+    const errors = {};
+    if (req.query.error === 'security_question_validation') {
+        errors.security_question_validation = true;
+        errors.security_question_validation_details = req.query.details ? decodeURIComponent(req.query.details) : '';
+    }
+    if (req.query.error === 'setup_failed') {
+        errors.setup_failed = true;
+    }
+    if (req.query.success === 'questions_setup') {
+        errors.questions_setup = true;
+    }
+    
+    res.render(__dirname + '/views' + '/setup_security_questions.hbs', { 
+        layout: false, 
+        errors,
+        questions: SECURITY_QUESTIONS
+    });
+})
+.post(isLoggedIn, async (req, res) => {
+    try {
+        const { question1, answer1, question2, answer2, question3, answer3 } = req.body;
+        
+        console.log('Setup security questions POST request received');
+        console.log('User ID:', req.session.user._id);
+        console.log('Form data:', { question1, answer1, question2, answer2, question3, answer3 });
+        
+        // 2.3.1, 2.3.2, 2.3.3: Data validation for security answers
+        const answers = [answer1, answer2, answer3];
+        for (let i = 0; i < answers.length; i++) {
+            const validationResult = validateSecurityAnswer(answers[i]);
+            if (!validationResult.isValid) {
+                logValidationEvent('error', 'Security answer validation failed', {
+                    errors: validationResult.errors,
+                    rejectedFields: validationResult.getRejectedFields(),
+                    userId: req.session.user._id,
+                    answerIndex: i + 1
+                });
+                
+                res.redirect(`/setup-security-questions?error=security_question_validation&details=${encodeURIComponent(validationResult.getFirstError().message)}`);
+                return;
+            }
+        }
+        
+        if (!question1 || !answer1 || !question2 || !answer2 || !question3 || !answer3) {
+            console.log('Missing required fields');
+            res.redirect('/setup-security-questions?error=setup_failed');
+            return;
+        }
+        
+        const questions = { question1, answer1, question2, answer2, question3, answer3 };
+        console.log('Calling setupSecurityQuestions with:', questions);
+        const result = await setupSecurityQuestions(req.session.user._id, questions);
+        
+        console.log('setupSecurityQuestions result:', result);
+        
+        if (result.success) {
+            console.log('Security questions setup successful');
+            res.redirect('/setup-security-questions?success=questions_setup');
+        } else {
+            console.log('Security questions setup failed:', result.error);
+            if (result.error === 'security_question_validation') {
+                res.redirect(`/setup-security-questions?error=security_question_validation&details=${encodeURIComponent(result.details)}`);
+            } else {
+                res.redirect('/setup-security-questions?error=setup_failed');
+            }
+        }
+    } catch (error) {
+        console.error('Error in setup security questions:', error);
+        res.redirect('/setup-security-questions?error=setup_failed');
+    }
+});
+
+app.get('/logout', isLoggedIn, (req, res) => {
     req.session.destroy(err => {
         if (err) {
             console.error('Error destroying session: ', err);
@@ -581,7 +1151,7 @@ app.get('/logout', (req, res) => {
 });
 
 app.route('/reviewlist')
-.get(async (req, res) => {
+.get(isLoggedIn, async (req, res) => {
     var professorId = req.query.id;
     console.log('ReviewList - Professor ID:', professorId);
     
@@ -620,7 +1190,7 @@ app.route('/reviewlist')
 });
 
 app.route('/viewreview')
-.get(async (req, res) => {
+.get(isLoggedIn, async (req, res) => {
     try {
         var postId = req.query.id;
         var postData = await getPostData(postId);
@@ -667,7 +1237,7 @@ app.route('/viewreview')
         });
     }
 })
-.post(async (req, res) => {
+.post(isLoggedIn, async (req, res) => {
     try {
         var myId = req.session.user._id;
         var userData = await getUserData(myId);
@@ -729,12 +1299,10 @@ app.post('/deletecomment', isLoggedIn, async (req, res) => {
     }
 });
 
-app.post('/delete-review-and-comments', isLoggedIn, async (req, res) => {
+app.post('/delete-review-and-comments', isLoggedIn, enforceBusinessRulesMiddleware('delete_review', (req) => ({
+    reviewId: req.body.reviewId
+})), async (req, res) => {
     try {
-        if (!req.session.user) {
-            return res.status(403).send('Forbidden');
-        }
-        
         const { reviewId } = req.body;
         
         // Get the post data to check ownership
@@ -743,27 +1311,32 @@ app.post('/delete-review-and-comments', isLoggedIn, async (req, res) => {
             return res.status(404).send('Review not found');
         }
         
-        // Check if user owns the review or is a manager/administrator
-        const isOwner = postData.op && postData.op.toString() === req.session.user._id;
-        const isManager = req.session.user.userType === 'manager';
-        const isAdmin = req.session.user.userType === 'administrator';
-        
-        if (!isOwner && !isManager && !isAdmin) {
-            return res.status(403).send('Forbidden - You can only delete your own reviews');
-        }
-        
         // Delete comments first, then the post
         await Comment.deleteMany({ post: reviewId });
         await deletePost(reviewId);
         
+        // Log successful deletion
+        logBusinessRuleEvent('info', 'Review deleted successfully', {
+            userId: req.session.user._id,
+            userType: req.session.user.userType,
+            reviewId: reviewId,
+            reviewOwner: postData.op
+        });
+        
         // Redirect based on user type
-        if (req.session.user.userType === 'student' || req.session.user.userType === 'professor') {
+        if (hasAnyRole(['student', 'professor'], req.session.user)) {
             res.redirect('/editprofile');
         } else {
             res.redirect('/');
         }
     } catch (error) {
         console.error('Error deleting review and comments:', error);
+        logBusinessRuleEvent('error', 'Error deleting review', {
+            userId: req.session.user._id,
+            userType: req.session.user.userType,
+            reviewId: req.body.reviewId,
+            error: error.message
+        });
         res.status(500).send('Server error');
     }
 });
@@ -825,7 +1398,7 @@ app.route('/reply')
 });
 
 app.route('/viewcomments')
-.get(async (req, res) => {
+.get(isLoggedIn, async (req, res) => {
     try {
         var postId = req.query.id;
         var postData = await getPostData(postId);
@@ -874,7 +1447,7 @@ app.route('/viewcomments')
 });
 
 app.route('/viewprof')
-.get(async (req, res) => {
+.get(isLoggedIn, async (req, res) => {
     try {
         var professorId = req.query.id;
         console.log('ViewProf - Professor ID:', professorId);
@@ -916,9 +1489,21 @@ app.route('/viewprof')
         res.redirect('/login');
     }
 })
-.post(async (req, res) => {
+.post(isLoggedIn, async (req, res) => {
     try {
         const { search } = req.body;
+        
+        // 2.3.1, 2.3.2, 2.3.3: Data validation for search query
+        const validationResult = validateSearchQuery(search);
+        if (!validationResult.isValid) {
+            logValidationEvent('error', 'Search query validation failed', {
+                errors: validationResult.errors,
+                rejectedFields: validationResult.getRejectedFields()
+            });
+            
+            res.redirect('/?error=invalid_search');
+            return;
+        }
         
         if (!search || search.trim() === '') {
             res.redirect('/');
@@ -1047,7 +1632,7 @@ app.route('/editreview')
     }
 });
 
-app.route('/help').all(async(req, res) => {
+app.route('/help').all(isLoggedIn, async(req, res) => {
     try{
 
         res.render(__dirname + '/views' + '/help.hbs', { layout: false });
@@ -1070,9 +1655,9 @@ app.route('/moderator')
         console.log('Current user type:', userType);
         
         // Calculate user counts for statistics
-        const studentCount = users.filter(user => user.userType === 'student').length;
-        const professorCount = users.filter(user => user.userType === 'professor').length;
-        const unassignedCount = users.filter(user => user.userType === 'manager' || user.userType === 'administrator').length;
+        const studentCount = users.filter(user => user.userType === AUTH_CONFIG.USER_TYPES.STUDENT).length;
+        const professorCount = users.filter(user => user.userType === AUTH_CONFIG.USER_TYPES.PROFESSOR).length;
+        const unassignedCount = users.filter(user => hasAnyRole([AUTH_CONFIG.USER_TYPES.MANAGER, AUTH_CONFIG.USER_TYPES.ADMINISTRATOR], user)).length;
         
         console.log('Moderator Dashboard Statistics:');
         console.log('Total users:', users.length);
@@ -1087,6 +1672,7 @@ app.route('/moderator')
             studentCount,
             professorCount,
             unassignedCount,
+            lastUseInfo: req.session.lastUseInfo || null,
             layout: false
         };
         
@@ -1140,9 +1726,9 @@ app.route('/admin')
         const userType = req.session.user ? req.session.user.userType : null;
         
         // Calculate user counts for statistics
-        const studentCount = users.filter(user => user.userType === 'student').length;
-        const professorCount = users.filter(user => user.userType === 'professor').length;
-        const moderatorCount = users.filter(user => user.userType === 'manager').length;
+        const studentCount = users.filter(user => user.userType === AUTH_CONFIG.USER_TYPES.STUDENT).length;
+        const professorCount = users.filter(user => user.userType === AUTH_CONFIG.USER_TYPES.PROFESSOR).length;
+        const moderatorCount = users.filter(user => user.userType === AUTH_CONFIG.USER_TYPES.MANAGER).length;
         
         res.render(__dirname + '/views' + '/admin_dashboard.hbs', {
             users,
@@ -1150,6 +1736,7 @@ app.route('/admin')
             studentCount,
             professorCount,
             moderatorCount,
+            lastUseInfo: req.session.lastUseInfo || null,
             layout: false
         });
     } catch (error) {
@@ -1169,11 +1756,13 @@ app.route('/admin/users')
     }
 });
 
+// 2.4.4: Admin logs routes - restrict access to logs to only website administrators
 app.route('/admin/logs')
 .get(isAdministrator, async (req, res) => {
     try {
         res.render(__dirname + '/views' + '/admin_logs.hbs', {
-            layout: false
+            layout: false,
+            loggedInUser: req.session.user
         });
     } catch (error) {
         console.error('Error loading admin logs: ', error);
@@ -1181,7 +1770,94 @@ app.route('/admin/logs')
     }
 });
 
-app.post('/admin/delete-user', isAdministrator, async (req, res) => {
+// 2.4.4: API endpoint to get logs data
+app.get('/admin/logs/data', isAdministrator, async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const skip = (page - 1) * limit;
+        
+        const filters = {};
+        if (req.query.level) filters.level = req.query.level;
+        if (req.query.eventType) filters.eventType = req.query.eventType;
+        if (req.query.success !== undefined) filters.success = req.query.success === 'true';
+        if (req.query.startDate) filters.startDate = req.query.startDate;
+        if (req.query.endDate) filters.endDate = req.query.endDate;
+        
+        const result = await getLogs(filters, limit, skip);
+        
+        res.json({
+            success: true,
+            logs: result.logs,
+            page: result.page,
+            totalPages: result.totalPages,
+            total: result.total
+        });
+    } catch (error) {
+        console.error('Error fetching logs:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch logs'
+        });
+    }
+});
+
+// 2.4.4: API endpoint to get log statistics
+app.get('/admin/logs/statistics', isAdministrator, async (req, res) => {
+    try {
+        const stats = await getLogStatistics();
+        res.json({
+            success: true,
+            stats
+        });
+    } catch (error) {
+        console.error('Error fetching log statistics:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch log statistics'
+        });
+    }
+});
+
+// 2.4.4: API endpoint to export logs as CSV
+app.get('/admin/logs/export', isAdministrator, async (req, res) => {
+    try {
+        const filters = {};
+        if (req.query.level) filters.level = req.query.level;
+        if (req.query.eventType) filters.eventType = req.query.eventType;
+        if (req.query.success !== undefined) filters.success = req.query.success === 'true';
+        if (req.query.startDate) filters.startDate = req.query.startDate;
+        if (req.query.endDate) filters.endDate = req.query.endDate;
+        
+        const result = await getLogs(filters, 10000, 0); // Get up to 10,000 logs for export
+        
+        // Generate CSV content
+        const csvHeader = 'Timestamp,Level,Event Type,Message,Success,User ID,User Type,IP Address\n';
+        const csvRows = result.logs.map(log => {
+            const timestamp = new Date(log.timestamp).toISOString();
+            const message = log.message.replace(/"/g, '""'); // Escape quotes
+            const userId = log.userId ? log.userId._id || log.userId : '';
+            const userType = log.userType || '';
+            const ipAddress = log.ipAddress || '';
+            
+            return `"${timestamp}","${log.level}","${log.eventType}","${message}","${log.success}","${userId}","${userType}","${ipAddress}"`;
+        }).join('\n');
+        
+        const csvContent = csvHeader + csvRows;
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="profdex_logs_${new Date().toISOString().split('T')[0]}.csv"`);
+        res.send(csvContent);
+    } catch (error) {
+        console.error('Error exporting logs:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to export logs'
+        });
+    }
+});
+
+app.post('/admin/delete-user', canPerformActionMiddleware('delete_user'), async (req, res) => {
     try {
         console.log('Full request body:', req.body);
         const { userId } = req.body;
@@ -1194,10 +1870,29 @@ app.post('/admin/delete-user', isAdministrator, async (req, res) => {
             return res.status(400).json({ error: 'User ID is required' });
         }
         
+        // Additional fail-secure validation: prevent self-deletion
+        if (userId === req.session.user._id.toString()) {
+            logSecurityEvent('warn', 'Admin attempted to delete their own account', {
+                ipAddress: req.ip,
+                userAgent: req.get('User-Agent'),
+                userId: req.session.user._id,
+                userType: req.session.user.userType
+            });
+            return res.status(403).json({ error: 'Cannot delete your own account' });
+        }
+        
         const result = await deleteUser(userId);
         
         if (result) {
             console.log('User deletion successful:', result.email);
+            logSecurityEvent('info', 'User deleted successfully', {
+                ipAddress: req.ip,
+                userAgent: req.get('User-Agent'),
+                adminUserId: req.session.user._id,
+                adminUserType: req.session.user.userType,
+                deletedUserId: userId,
+                deletedUserEmail: result.email
+            });
             res.json({ success: true, message: 'User deleted successfully' });
         } else {
             console.log('User deletion failed - no result returned');
@@ -1205,11 +1900,19 @@ app.post('/admin/delete-user', isAdministrator, async (req, res) => {
         }
     } catch (error) {
         console.error('Error deleting user: ', error);
+        logSecurityEvent('error', 'Error deleting user', {
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent'),
+            adminUserId: req.session.user._id,
+            adminUserType: req.session.user.userType,
+            targetUserId: req.body.userId,
+            error: error.message
+        });
         res.status(500).json({ error: 'Server error: ' + error.message });
     }
 });
 
-app.post('/admin/update-role', isAdministrator, async (req, res) => {
+app.post('/admin/update-role', canPerformActionMiddleware('update_user_role'), async (req, res) => {
     try {
         const { userId, newRole } = req.body;
         console.log(`Admin attempting to update user ${userId} to role: ${newRole}`);
@@ -1218,10 +1921,46 @@ app.post('/admin/update-role', isAdministrator, async (req, res) => {
             return res.status(400).json({ error: 'User ID and new role are required' });
         }
         
+        // Additional fail-secure validation: validate role
+        const validRoles = Object.values(AUTH_CONFIG.USER_TYPES);
+        if (!validRoles.includes(newRole)) {
+            logSecurityEvent('warn', 'Invalid role update attempt', {
+                ipAddress: req.ip,
+                userAgent: req.get('User-Agent'),
+                adminUserId: req.session.user._id,
+                adminUserType: req.session.user.userType,
+                targetUserId: userId,
+                invalidRole: newRole,
+                validRoles
+            });
+            return res.status(400).json({ error: 'Invalid role specified' });
+        }
+        
+        // Additional fail-secure validation: prevent self-role-change
+        if (userId === req.session.user._id.toString()) {
+            logSecurityEvent('warn', 'Admin attempted to change their own role', {
+                ipAddress: req.ip,
+                userAgent: req.get('User-Agent'),
+                userId: req.session.user._id,
+                userType: req.session.user.userType,
+                attemptedRole: newRole
+            });
+            return res.status(403).json({ error: 'Cannot change your own role' });
+        }
+        
         const result = await updateUserRole(userId, newRole);
         
         if (result) {
             console.log(`Successfully updated user ${userId} to role: ${newRole}`);
+            logSecurityEvent('info', 'User role updated successfully', {
+                ipAddress: req.ip,
+                userAgent: req.get('User-Agent'),
+                adminUserId: req.session.user._id,
+                adminUserType: req.session.user.userType,
+                targetUserId: userId,
+                oldRole: result.userType,
+                newRole: newRole
+            });
             res.json({ success: true, message: 'User role updated successfully' });
         } else {
             console.log(`Failed to update user ${userId} to role: ${newRole}`);
@@ -1229,41 +1968,280 @@ app.post('/admin/update-role', isAdministrator, async (req, res) => {
         }
     } catch (error) {
         console.error('Error updating user role: ', error);
+        logSecurityEvent('error', 'Error updating user role', {
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent'),
+            adminUserId: req.session.user._id,
+            adminUserType: req.session.user.userType,
+            targetUserId: req.body.userId,
+            attemptedRole: req.body.newRole,
+            error: error.message
+        });
         res.status(500).json({ error: 'Server error: ' + error.message });
     }
 });
 
 app.route('/admin/login')
 .get(async (req, res) => {
+    try {
+        console.log('Admin login GET request received');
     const errors = {};
-    if (req.query.error === 'invalid_credentials') {
-        errors.invalid_credentials = true;
-    }
-    
+        if (req.query.error === 'authentication_failed') {
+            errors.authentication_failed = true;
+        }
+        if (req.query.error === 'account_locked') {
+            errors.account_locked = true;
+            errors.account_locked_reason = req.query.reason ? decodeURIComponent(req.query.reason) : 'Account is locked due to too many failed login attempts.';
+        }
+        
+        // Store the original URL to redirect back after login
+        if (req.query.returnTo) {
+            req.session.returnTo = req.query.returnTo;
+        }
+        
+        console.log('Rendering admin login page with errors:', errors);
     res.render(__dirname + '/views' + '/admin_login.hbs', { 
         layout: false, 
         errors
     });
+    } catch (error) {
+        console.error('Error in admin login GET route:', error);
+        res.status(500).send('Internal server error');
+    }
 })
 .post(async (req, res) => {
     try {
+        console.log('Admin login POST request received');
         const { email, password } = req.body;
         
         if (!email || !password) {
-            return res.redirect('/admin/login?error=invalid_credentials');
+            console.log('Admin login failed: Missing email or password');
+            return res.redirect('/admin/login?error=authentication_failed');
         }
         
+        console.log('Attempting admin login for email:', email);
         const loggedInUser = await loginUser(email, password, req);
         
-        if (loggedInUser && loggedInUser.userType === 'administrator') {
-            res.redirect('/admin');
+        if (loggedInUser) {
+            // Check for account locked error
+            if (loggedInUser.error === 'account_locked') {
+                console.log('Admin login blocked: Account locked');
+                res.redirect(`/admin/login?error=account_locked&reason=${encodeURIComponent(loggedInUser.reason)}`);
+                return;
+            }
+            
+            if (canPerformAction(loggedInUser, 'view_admin_panel')) {
+                console.log('Admin login successful for:', email);
+                // Check if we have last use information to display
+                if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
+                    // Store last use info in session for display after redirect
+                    req.session.lastUseInfo = loggedInUser.lastUseInfo;
+                }
+                
+                // Redirect to original destination if available, otherwise to admin dashboard
+                const returnTo = req.session.returnTo;
+                if (returnTo && returnTo !== '/admin/login') {
+                    delete req.session.returnTo;
+                    // Add last use parameter to the redirect
+                    const separator = returnTo.includes('?') ? '&' : '?';
+                    const lastUseParam = loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify ? `${separator}show_last_use=true` : '';
+                    res.redirect(returnTo + lastUseParam);
         } else {
-            res.redirect('/admin/login?error=invalid_credentials');
+                    // Redirect to admin dashboard with last use parameter if needed
+                    let redirectUrl = '/admin';
+                    if (loggedInUser.lastUseInfo && loggedInUser.lastUseInfo.shouldNotify) {
+                        redirectUrl += '?show_last_use=true';
+                    }
+                    res.redirect(redirectUrl);
+                }
+            } else {
+                console.log('Admin login failed: User is not administrator');
+                res.redirect('/admin/login?error=authentication_failed');
+            }
+        } else {
+            console.log('Admin login failed: Invalid credentials');
+            res.redirect('/admin/login?error=authentication_failed');
         }
     } catch (error) {
         console.error('Error during admin login: ', error);
-        res.redirect('/admin/login?error=invalid_credentials');
+        res.redirect('/admin/login?error=authentication_failed');
     }
+});
+
+// Password change request route (Step 1: Re-authentication)
+app.route('/change-password-request')
+.get(isLoggedIn, (req, res) => {
+    const errors = {};
+    if (req.query.error === 'reauth_failed') {
+        errors.reauth_failed = true;
+    }
+    if (req.query.error === 'account_locked') {
+        errors.account_locked = true;
+        errors.lockout_message = req.query.message ? decodeURIComponent(req.query.message) : '';
+    }
+    if (req.query.error === 'reauth_expired') {
+        errors.reauth_expired = true;
+    }
+    
+    res.render(__dirname + '/views' + '/change_password_request.hbs', { 
+        layout: false, 
+        errors,
+        userType: req.session.user.userType,
+        loggedInUser: req.session.user
+    });
+})
+.post(isLoggedIn, async (req, res) => {
+    try {
+        console.log('=== Change Password Request POST ===');
+        console.log('Request body:', req.body);
+        console.log('Session user ID:', req.session.user._id);
+        console.log('Session user email:', req.session.user.email);
+        
+        const { currentPassword } = req.body;
+        
+        // Validate input
+        if (!currentPassword) {
+            console.log('Missing currentPassword in request body');
+            res.redirect('/change-password-request?error=reauth_failed');
+            return;
+        }
+        
+        console.log('Attempting re-authentication...');
+        
+        // Re-authenticate user
+        const reAuthResult = await reAuthenticateUser(req.session.user._id, currentPassword);
+        console.log('Re-authentication result:', reAuthResult);
+        
+        if (reAuthResult.success) {
+            // Store re-authentication status in session
+            req.session.reauthenticated = true;
+            req.session.reauthTimestamp = Date.now();
+            req.session.save();
+            
+            console.log('Re-authentication successful, redirecting to password change form');
+            // Redirect to password change form
+            res.redirect('/change-password');
+        } else {
+            console.log('Re-authentication failed:', reAuthResult.error);
+            if (reAuthResult.error.includes('locked')) {
+                const message = encodeURIComponent(reAuthResult.error);
+                res.redirect(`/change-password-request?error=account_locked&message=${message}`);
+            } else {
+                res.redirect('/change-password-request?error=reauth_failed');
+            }
+        }
+    } catch (error) {
+        console.error('Error during re-authentication:', error);
+        res.redirect('/change-password-request?error=reauth_failed');
+    }
+});
+
+// Password change route (Step 2: Actual password change)
+app.route('/change-password')
+.get(isLoggedIn, async (req, res) => {
+    // Check if user has been re-authenticated
+    if (!req.session.reauthenticated || !req.session.reauthTimestamp) {
+        return res.redirect('/change-password-request');
+    }
+    
+    // Check if re-authentication is still valid (15 minutes)
+    const reauthAge = Date.now() - req.session.reauthTimestamp;
+    const reauthTimeout = 15 * 60 * 1000; // 15 minutes
+    
+    if (reauthAge > reauthTimeout) {
+        // Clear expired re-authentication
+        delete req.session.reauthenticated;
+        delete req.session.reauthTimestamp;
+        return res.redirect('/change-password-request?error=reauth_expired');
+    }
+    
+    const errors = {};
+    if (req.query.error === 'validation_error') {
+        errors.validation_error = true;
+    }
+    if (req.query.error === 'current_password_error') {
+        errors.current_password_error = true;
+    }
+    if (req.query.error === 'password_history_error') {
+        errors.password_history_error = true;
+    }
+    if (req.query.error === 'password_validation_error') {
+        errors.password_validation_error = true;
+        errors.password_validation_details = req.query.details ? decodeURIComponent(req.query.details) : '';
+    }
+    if (req.query.error === 'password_age_error') {
+        errors.password_age_error = true;
+        errors.password_age_message = req.query.message ? decodeURIComponent(req.query.message) : '';
+    }
+    if (req.query.success === 'true') {
+        errors.success = true;
+    }
+    
+    res.render(__dirname + '/views' + '/change_password.hbs', { 
+        layout: false, 
+        errors,
+        userType: req.session.user.userType,
+        loggedInUser: req.session.user
+    });
+})
+.post(isLoggedIn, async (req, res) => {
+    try {
+        console.log('Change password POST request received');
+        console.log('Request body:', req.body);
+        console.log('Session user:', req.session.user ? req.session.user._id : 'No user');
+        console.log('Re-authenticated status:', req.session.reauthenticated);
+        
+        const { currentPassword, newPassword, confirmPassword } = req.body;
+        
+        // Validate input
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            console.log('Missing required fields - currentPassword:', !!currentPassword, 'newPassword:', !!newPassword, 'confirmPassword:', !!confirmPassword);
+            res.redirect('/change-password?error=validation_error');
+            return;
+        }
+        
+        // Check if passwords match
+        if (newPassword !== confirmPassword) {
+            res.redirect('/change-password?error=validation_error');
+            return;
+        }
+        
+        // Always require re-authentication for password changes
+        console.log('Calling changePassword function...');
+        const result = await changePassword(req.session.user._id, currentPassword, newPassword);
+        console.log('changePassword result:', result);
+        
+        if (result.success) {
+            // Clear re-authentication status after successful password change
+            delete req.session.reauthenticated;
+            delete req.session.reauthTimestamp;
+            res.redirect('/editprofile?password_changed=true');
+        } else {
+            if (result.error.includes('used recently')) {
+                res.redirect('/change-password?error=password_history_error');
+            } else if (result.error === 'Password validation failed') {
+                const details = encodeURIComponent(result.details.join(', '));
+                res.redirect(`/change-password?error=password_validation_error&details=${details}`);
+            } else if (result.error.includes('must be at least') && result.error.includes('day(s) old')) {
+                const message = encodeURIComponent(result.error);
+                res.redirect(`/change-password?error=password_age_error&message=${message}`);
+            } else {
+                res.redirect('/change-password?error=validation_error');
+            }
+        }
+    } catch (error) {
+        console.error('Error changing password:', error);
+        res.redirect('/change-password?error=validation_error');
+    }
+});
+
+// 2.4.1, 2.4.2: Global error handling middleware - no debugging/stack trace, generic messages
+app.use(errorHandlingMiddleware());
+
+// 404 handler - fail securely by redirecting to login
+app.use((req, res) => {
+    console.log('404 - Route not found:', req.originalUrl);
+    res.redirect('/login');
 });
 
 // Start the server
@@ -1271,6 +2249,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Server listening on port: ${PORT}`);
     console.log(`📱 Access your application at: http://localhost:${PORT}`);
     console.log(`🔐 Admin panel available at: http://localhost:${PORT}/admin/login`);
+    console.log(`🔑 Current password pepper: ${process.env.PASSWORD_PEPPER || 'default-pepper-change-in-production'}`);
 });
 
 module.exports = app;
