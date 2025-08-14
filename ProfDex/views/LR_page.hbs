@@ -107,6 +107,9 @@
                 {{#if errors.account_locked}}
                     <b class="credentials-error">{{errors.account_locked_reason}}</b>
                 {{/if}}
+                {{#if errors.data_validation}}
+                    <b class="credentials-error">Data validation failed: {{errors.data_validation_details}}</b>
+                {{/if}}
             </div>
         </div>
 

@@ -277,6 +277,20 @@ const {
     logBusinessRuleEvent
 } = require('./business_rules');
 
+// Import data validation system
+const {
+    validateDataMiddleware,
+    validateUserRegistration,
+    validateReviewCreation,
+    validateProfileEdit,
+    validateSearchQuery,
+    validateComment,
+    validateSecurityAnswer,
+    validateCourse,
+    validateSubject,
+    logValidationEvent
+} = require('./data_validation');
+
 async function initializeAdminAccount() {
     try {
         console.log('🔍 Checking for existing administrator account...');
@@ -348,6 +362,9 @@ app.route('/createpost')
     if (req.query.error === 'existing_review') {
         errors.existing_review = true;
     }
+    if (req.query.error === 'data_validation') {
+        errors.data_validation = true;
+    }
 
     const professors = await getAllProfessorData();
     const subjects = await getAllSubjects();
@@ -382,6 +399,31 @@ app.route('/createpost')
         var myId = req.session.user._id;
         var userData = await getUserData(myId);
         var { professorId, course, text, generosity, difficulty, engagement, proficiency, workload} = req.body;
+        
+        // 2.3.1, 2.3.2, 2.3.3: Data validation before review creation
+        const reviewData = {
+            professorId: professorId,
+            text: text,
+            ratings: {
+                generosity: generosity,
+                difficulty: difficulty,
+                engagement: engagement,
+                proficiency: proficiency,
+                workload: workload
+            }
+        };
+        
+        const validationResult = validateReviewCreation(reviewData);
+        if (!validationResult.isValid) {
+            logValidationEvent('error', 'Review creation validation failed', {
+                errors: validationResult.errors,
+                rejectedFields: validationResult.getRejectedFields(),
+                userId: myId
+            });
+            
+            res.redirect('/createpost?error=data_validation');
+            return;
+        }
         
         if (!professorId || !course || !text) {
             res.redirect('/createpost?error=validation_error');
@@ -445,6 +487,9 @@ app.route('/editprofile')
     if (req.query.password_changed === 'true') {
         errors.password_changed = true;
     }
+    if (req.query.error === 'data_validation') {
+        errors.data_validation = true;
+    }
     
     var myId = req.session.user._id;
     var userData = await getUserData(myId);
@@ -492,6 +537,26 @@ app.route('/editprofile')
     try {
       const myId = req.session.user._id;
       const { firstName, lastName, email, studentID, course, bio } = req.body;
+
+      // 2.3.1, 2.3.2, 2.3.3: Data validation before profile edit
+      const profileData = {
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        bio: bio
+      };
+      
+      const validationResult = validateProfileEdit(profileData);
+      if (!validationResult.isValid) {
+        logValidationEvent('error', 'Profile edit validation failed', {
+          errors: validationResult.errors,
+          rejectedFields: validationResult.getRejectedFields(),
+          userId: myId
+        });
+        
+        res.redirect('/editprofile?error=data_validation');
+        return;
+      }
 
       if (!firstName || !lastName || !email) {
         res.redirect('/editprofile?error=validation_error');
@@ -585,6 +650,10 @@ app.route('/login')
         errors.account_locked = true;
         errors.account_locked_reason = req.query.reason ? decodeURIComponent(req.query.reason) : 'Account is locked due to too many failed login attempts.';
     }
+    if (req.query.error === 'data_validation') {
+        errors.data_validation = true;
+        errors.data_validation_details = req.query.details ? decodeURIComponent(req.query.details) : 'Data validation failed.';
+    }
     if (req.query.success === 'password_reset') {
         errors.password_reset = true;
     }
@@ -673,6 +742,30 @@ app.route('/login')
         else if (registerFirstName && registerLastName && registerEmail && registerPassword && confirmPassword && userType) {
             if (registerPassword !== confirmPassword) {
                 res.redirect('/login?error=password_mismatch');
+                return;
+            }
+            
+            // 2.3.1, 2.3.2, 2.3.3: Data validation before registration
+            const registrationData = {
+                firstName: registerFirstName,
+                lastName: registerLastName,
+                email: registerEmail,
+                userType: userType,
+                studentID: studentID,
+                teacherID: teacherID
+            };
+            
+            const validationResult = validateUserRegistration(registrationData);
+            if (!validationResult.isValid) {
+                logValidationEvent('error', 'User registration validation failed', {
+                    errors: validationResult.errors,
+                    rejectedFields: validationResult.getRejectedFields()
+                });
+                
+                // Redirect with validation error details
+                const firstError = validationResult.getFirstError();
+                const errorMessage = firstError ? encodeURIComponent(firstError.message) : 'Data validation failed';
+                res.redirect(`/login?error=data_validation&details=${errorMessage}`);
                 return;
             }
             
@@ -950,6 +1043,23 @@ app.route('/setup-security-questions')
         console.log('Setup security questions POST request received');
         console.log('User ID:', req.session.user._id);
         console.log('Form data:', { question1, answer1, question2, answer2, question3, answer3 });
+        
+        // 2.3.1, 2.3.2, 2.3.3: Data validation for security answers
+        const answers = [answer1, answer2, answer3];
+        for (let i = 0; i < answers.length; i++) {
+            const validationResult = validateSecurityAnswer(answers[i]);
+            if (!validationResult.isValid) {
+                logValidationEvent('error', 'Security answer validation failed', {
+                    errors: validationResult.errors,
+                    rejectedFields: validationResult.getRejectedFields(),
+                    userId: req.session.user._id,
+                    answerIndex: i + 1
+                });
+                
+                res.redirect(`/setup-security-questions?error=security_question_validation&details=${encodeURIComponent(validationResult.getFirstError().message)}`);
+                return;
+            }
+        }
         
         if (!question1 || !answer1 || !question2 || !answer2 || !question3 || !answer3) {
             console.log('Missing required fields');
@@ -1331,6 +1441,18 @@ app.route('/viewprof')
 .post(isLoggedIn, async (req, res) => {
     try {
         const { search } = req.body;
+        
+        // 2.3.1, 2.3.2, 2.3.3: Data validation for search query
+        const validationResult = validateSearchQuery(search);
+        if (!validationResult.isValid) {
+            logValidationEvent('error', 'Search query validation failed', {
+                errors: validationResult.errors,
+                rejectedFields: validationResult.getRejectedFields()
+            });
+            
+            res.redirect('/?error=invalid_search');
+            return;
+        }
         
         if (!search || search.trim() === '') {
             res.redirect('/');
